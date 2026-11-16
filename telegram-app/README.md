@@ -37,12 +37,24 @@ The free tunnel address changes every time you restart cloudflared, so repeat st
 
 Opening http://localhost:5173 in a normal browser only shows "Open this app from the bot": without Telegram there is no signed `initData`.
 
-## Build for production
+## Deploy on Cloudflare Workers
 
-`npm run build` creates `dist/`. Host it on any static host with https (Vercel, Netlify, Cloudflare Pages…), then:
+`wrangler.jsonc` + `worker/index.ts` make Cloudflare serve the built app and forward `/api/*` to the backend:
 
-- in this project's `.env`, set `VITE_API_URL` to the backend's https address before building;
-- in the backend's `.env`, set `MINI_APP_URL` to the Mini App's address (this also allows it through CORS).
+```
+Telegram → https://barchasiarzon.<you>.workers.dev
+             ├─ /api/*  → BACKEND_URL (your backend, e.g. a cloudflared tunnel to localhost:3005)
+             └─ else    → dist/ (the React app)
+```
+
+Cloudflare dashboard → your Worker → **Settings**:
+
+- **Build**: Root directory `telegram-app`, Build command `npm run build`, Deploy command `npx wrangler deploy`
+- **Variables and Secrets**: `BACKEND_URL` = the backend's https address (no `/` at the end)
+
+In the backend's `.env`, `MINI_APP_URL` = the workers.dev address. Leave `VITE_API_URL` empty: the app and `/api` share one address.
+
+Check: opening `https://…workers.dev/api/me` in a browser should show `{"code":401,"message":"Open this app from the Telegram bot."}`. That means Cloudflare reached your backend.
 
 ## Files
 
