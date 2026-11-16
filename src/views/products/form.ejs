@@ -1,0 +1,81 @@
+<% const isEdit = !!product; const p = product || {}; %>
+<%- include("../includes/header", { title: isEdit ? "Edit product" : "New product" }) %>
+
+<div class="page-head">
+  <h1><%= isEdit ? "Edit product" : "New product" %></h1>
+  <a class="btn" href="/admin/products">← Back to list</a>
+</div>
+
+<form class="card form" method="post" enctype="multipart/form-data"
+      action="<%= isEdit ? `/admin/products/${p._id}` : "/admin/products" %>">
+
+  <div class="grid-2">
+    <label>Category
+      <select name="categoryId" required>
+        <% categories.forEach(c => { %>
+          <option value="<%= c._id %>" <%= String(c._id) === String(p.categoryId) ? "selected" : "" %>><%= c.nameUz %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Price (so'm, whole number)
+      <input name="price" inputmode="numeric" pattern="[0-9 ,]+" required value="<%= p.price ?? "" %>" placeholder="25000" />
+    </label>
+  </div>
+
+  <fieldset>
+    <label>Name
+      <input name="name" required maxlength="200" value="<%= p.nameUz || "" %>" />
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <label>Description (optional)
+      <textarea name="description" rows="4"><%= p.descriptionUz || "" %></textarea>
+    </label>
+  </fieldset>
+
+  <div class="grid-2">
+    <label>Availability
+      <select name="status">
+        <% statuses.forEach(s => { %>
+          <option value="<%= s %>" <%= s === (p.status || "in_stock") ? "selected" : "" %>><%= s.replace(/_/g, " ") %></option>
+        <% }) %>
+      </select>
+    </label>
+    <div class="checks">
+      <label class="check"><input type="checkbox" name="isSpecial" <%= p.isSpecial ? "checked" : "" %> /> 🔥 Special-price section</label>
+      <label class="check"><input type="checkbox" name="isVisible" <%= isEdit && !p.isVisible ? "" : "checked" %> /> Visible to customers</label>
+    </div>
+  </div>
+
+  <fieldset>
+    <legend>Photo</legend>
+    <div class="photo-row">
+      <% if (p.photoFileId) { %>
+        <img class="preview" src="/admin/photo/<%= encodeURIComponent(p.photoFileId) %>" alt="" />
+      <% } %>
+      <div>
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" />
+        <p class="muted small">JPEG, PNG or WebP, up to 10 MB. It is stored on Telegram's servers.</p>
+        <% if (p.photoFileId) { %>
+          <label class="check"><input type="checkbox" name="removePhoto" /> Remove current photo</label>
+        <% } %>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit"><%= isEdit ? "Save changes" : "Add product" %></button>
+  </div>
+</form>
+
+<% if (isEdit) { %>
+  <form class="danger-zone" method="post" action="/admin/products/<%= p._id %>/delete"
+        data-confirm="Delete this product permanently? Hiding it (untick 'Visible') is usually better.">
+    <p class="muted small">Prefer hiding a discontinued product instead of deleting it: future order history will need it.</p>
+    <button class="btn btn-danger" type="submit">Delete permanently</button>
+  </form>
+  <p class="muted small">Last updated <%= new Date(p.updatedAt).toLocaleString("en-GB") %><%= p.updatedBy ? ` by admin ${p.updatedBy}` : "" %>.</p>
+<% } %>
+
+<%- include("../includes/footer") %>
