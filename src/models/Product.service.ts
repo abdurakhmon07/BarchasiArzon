@@ -56,7 +56,13 @@ class ProductService {
     }
     if (inquiry.inStockOnly) match.status = { $ne: ProductStatus.OUT_OF_STOCK };
 
-    const defaultSort = inquiry.isSpecial ? { updatedAt: -1 as const, _id: 1 as const } : SORTS[ProductSort.NAME];
+    // Default order: deals → recently updated; whole shop (home feed) → newest; catalog → by name.
+    const defaultSort =
+      inquiry.isSpecial === undefined
+        ? SORTS[ProductSort.NEWEST]
+        : inquiry.isSpecial
+          ? { updatedAt: -1 as const, _id: 1 as const }
+          : SORTS[ProductSort.NAME];
 
     const limit = inquiry.limit ?? 10;
     const page = Math.max(1, inquiry.page ?? 1);

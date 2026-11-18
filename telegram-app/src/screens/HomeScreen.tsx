@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { formatPrice, t } from "../i18n";
-import type { Category, Home, Language, Product, ProductFilter } from "../types";
+import type { Home, Language, Product, ProductFilter } from "../types";
 import SearchBar from "../components/SearchBar";
 import ProductFeed from "../components/ProductFeed";
-import RecentRow from "../components/RecentRow";
 import { DealHeroCard, SkeletonCards } from "../components/ProductCard";
+import FilterSheet from "../components/FilterSheet";
+import type { Sort } from "../types";
 
 const LANGS: Language[] = ["uz", "ru", "en"];
 const FLAGS: Record<Language, string> = { uz: "🇺🇿", ru: "🇷🇺", en: "🇬🇧" };
@@ -13,12 +14,9 @@ interface Props {
   lang: Language;
   active: boolean;
   home: Home | null;
-  categories: Category[];
-  recentIds: string[];
   onOpen: (product: Product) => void;
   onLanguage: (lang: Language) => void;
   onDeals: (categoryId?: string) => void;
-  onCatalog: (categoryId?: string) => void;
 }
 
 /** Logo + language switch, shared look for the top of the home screen. */
@@ -43,13 +41,33 @@ function BrandHeader({ lang, onLanguage }: { lang: Language; onLanguage: (l: Lan
 }
 
 /**
- * Home: deals first. Big "Bugungi aksiyalar" row, how much you can save today,
- * categories with their deal counts, recently viewed. Typing in search shows results from the whole shop.
+ * Home: deals first — the big "Bugungi aksiyalar" row and how much you can save today,
+ * then every product mixed in one long feed. Typing in search shows results from the whole shop.
+ * (Categories live in Katalog/Aksiyalar; "recently viewed" lives in the Sevimli tab.)
  */
 export default function HomeScreen(props: Props) {
-  const { lang, active, home, categories, recentIds, onOpen, onLanguage, onDeals, onCatalog } = props;
+  const { lang, active, home, onOpen, onLanguage, onDeals } = props;
   const [q, setQ] = useState("");
+  // The "all products" feed under the deals: every visible product, deals and regular mixed, newest first.
+  const [feedSort, setFeedSort] = useState<Sort | null>(null);
+  const [feedInStock, setFeedInStock] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const searchFilter: ProductFilter = { section: "all", categoryId: null, q, sort: null, inStock: false, minDiscount: 0 };
+  const feedFilter: ProductFilter = {
+    section: "all",
+    categoryId: null,
+    q: "",
+    sort: feedSort,
+    inStock: feedInStock,
+    minDiscount: 0,
+  };
+  const sortKeys: Record<Sort, Parameters<typeof t>[1]> = {
+    newest: "sortNewest",
+    discount: "sortDiscount",
+    price_asc: "sortPriceAsc",
+    price_desc: "sortPriceDesc",
+    name: "sortName",
+  };
 
   return (
     <div className="screen">
@@ -97,30 +115,28 @@ export default function HomeScreen(props: Props) {
             </button>
           )}
 
-          {categories.length > 0 && (
-            <>
-              <div className="sec-head">
-                <h2>{t(lang, "categories")}</h2>
-              </div>
-              <div className="hscroll cats">
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    className="cat"
-                    // Deals first: a category with deals opens Aksiyalar, otherwise the catalog.
-                    onClick={() => (c.dealCount > 0 ? onDeals(c.id) : onCatalog(c.id))}
-                  >
-                    <div className="cat-icon">{c.icon || c.name.charAt(0)}</div>
-                    <span className="cat-name">{c.name}</span>
-                    {c.dealCount > 0 && <span className="cat-deals">{t(lang, "dealsInCategory", { n: c.dealCount })}</span>}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          <RecentRow ids={recentIds} lang={lang} onOpen={onOpen} />
+          <div className="sec-head">
+            <h2>🛍 {t(lang, "allProducts")}</h2>
+            <button className="link-muted" onClick={() => setSheet(true)}>
+              <b>{t(lang, feedSort ? sortKeys[feedSort] : "sortNewest")}</b>
+              {feedInStock ? " · ✓" : ""} ▾
+            </button>
+          </div>
+          <ProductFeed filter={feedFilter} lang={lang} active={active} onOpen={onOpen} />
         </>
+      )}
+
+      {sheet && (
+        <FilterSheet
+          lang={lang}
+          sort={feedSort}
+          inStock={feedInStock}
+          sorts={["discount", "price_asc", "price_desc", "name"]}
+          defaultSortKey="sortNewest"
+          onSort={setFeedSort}
+          onInStock={setFeedInStock}
+          onClose={() => setSheet(false)}
+        />
       )}
     </div>
   );

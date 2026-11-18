@@ -34,7 +34,6 @@ export default function App() {
   const [opened, setOpened] = useState<Product | null>(null);
   // Home → a category or "see all" opens Deals/Catalog with that filter; n changes on every jump.
   const [dealsPreset, setDealsPreset] = useState<Preset>({ categoryId: null, n: 0 });
-  const [catalogPreset, setCatalogPreset] = useState<Preset>({ categoryId: null, n: 0 });
   const scrollByTab = useRef<Partial<Record<Tab, number>>>({});
   const tabRef = useRef<Tab>("home");
 
@@ -69,15 +68,6 @@ export default function App() {
     },
     [goTab]
   );
-  const openCatalog = useCallback(
-    (categoryId?: string) => {
-      setCatalogPreset((p) => ({ categoryId: categoryId ?? null, n: p.n + 1 }));
-      scrollByTab.current.catalog = 0;
-      goTab("catalog");
-    },
-    [goTab]
-  );
-
   // Who is this? (the backend checks Telegram's signature and remembers the language)
   const boot = useCallback(() => {
     setBootError(null);
@@ -148,12 +138,9 @@ export default function App() {
             lang={lang}
             active={showing("home")}
             home={home}
-            categories={categories}
-            recentIds={recentIds}
             onOpen={openProduct}
             onLanguage={changeLanguage}
             onDeals={openDeals}
-            onCatalog={openCatalog}
           />
         </div>
         <div hidden={tab !== "catalog"}>
@@ -161,7 +148,6 @@ export default function App() {
             lang={lang}
             active={showing("catalog")}
             categories={categories}
-            preset={catalogPreset}
             onOpen={openProduct}
           />
         </div>
@@ -176,7 +162,7 @@ export default function App() {
           />
         </div>
         <div hidden={tab !== "favorites"}>
-          <FavoritesScreen lang={lang} active={showing("favorites")} onOpen={openProduct} />
+          <FavoritesScreen lang={lang} active={showing("favorites")} recentIds={recentIds} onOpen={openProduct} />
         </div>
         <div hidden={tab !== "cart"}>
           <CartScreen lang={lang} onOpen={openProduct} onDeals={() => openDeals()} />

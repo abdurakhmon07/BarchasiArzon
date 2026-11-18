@@ -19,6 +19,7 @@ const texts = {
   recent: { uz: "Yaqinda ko'rilgan", ru: "Вы смотрели", en: "Recently viewed" },
   searchAll: { uz: "Aksiya va mahsulot qidirish…", ru: "Поиск акций и товаров…", en: "Search deals and products…" },
   searchResults: { uz: "Qidiruv natijalari", ru: "Результаты поиска", en: "Search results" },
+  allProducts: { uz: "Barcha mahsulotlar", ru: "Все товары", en: "All products" },
 
   // deals screen
   dealsTitle: { uz: "Aksiyalar", ru: "Акции", en: "Deals" },

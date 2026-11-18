@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { t } from "../i18n";
 import { haptic } from "../telegram";
 import type { Category, Language, Product, ProductFilter } from "../types";
@@ -10,12 +10,11 @@ interface Props {
   lang: Language;
   active: boolean;
   categories: Category[];
-  preset: { categoryId: string | null; n: number };
   onOpen: (product: Product) => void;
 }
 
 /** Katalog: regular (non-special) products by category. */
-export default function CatalogScreen({ lang, active, categories, preset, onOpen }: Props) {
+export default function CatalogScreen({ lang, active, categories, onOpen }: Props) {
   const [filter, setFilter] = useState<ProductFilter>({
     section: "general",
     categoryId: null,
@@ -27,10 +26,6 @@ export default function CatalogScreen({ lang, active, categories, preset, onOpen
   const [total, setTotal] = useState<number | null>(null);
   const [sheet, setSheet] = useState(false);
   const update = (patch: Partial<ProductFilter>) => setFilter((f) => ({ ...f, ...patch }));
-
-  useEffect(() => {
-    if (preset.n > 0) update({ categoryId: preset.categoryId, q: "" });
-  }, [preset.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="screen">
