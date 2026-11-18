@@ -1,6 +1,8 @@
 import { isValidObjectId, Types } from "mongoose";
 import ProductModel from "../schema/Product.model";
 import CategoryModel from "../schema/Category.model";
+import FavoriteModel from "../schema/Favorite.model";
+import CartItemModel from "../schema/CartItem.model";
 import { Product, ProductInput, ProductInquiry } from "../libs/types/product";
 import { ProductSort, ProductStatus } from "../libs/enums/product.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
@@ -151,6 +153,11 @@ class ProductService {
   public async delete(id: string): Promise<void> {
     await this.getById(id);
     await this.productModel.findByIdAndDelete(id).exec();
+    // No foreign keys in MongoDB: remove the deleted product from everyone's favorites and carts.
+    await Promise.all([
+      FavoriteModel.deleteMany({ productId: id }).exec(),
+      CartItemModel.deleteMany({ productId: id }).exec(),
+    ]);
   }
 
   /** MongoDB has no foreign keys, so check the category exists and the price is valid here. */

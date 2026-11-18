@@ -6,6 +6,7 @@ export enum HttpCode {
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
   NOT_FOUND = 404,
+  CONFLICT = 409,
   INTERNAL_SERVER_ERROR = 500,
 }
 
@@ -27,6 +28,8 @@ export enum Message {
   INVALID_PHOTO = "Photo must be an image file (max 10 MB).",
   INVALID_INIT_DATA = "Open this app from the Telegram bot.",
   TOO_MANY_PHOTOS = "A product can have at most 5 extra photos.",
+  PRODUCT_UNAVAILABLE = "This product is out of stock or no longer available.",
+  INVALID_QUANTITY = "Quantity must be a whole number from 0 to 99.",
 }
 
 class Errors extends Error {

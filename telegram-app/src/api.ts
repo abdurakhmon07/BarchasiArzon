@@ -1,5 +1,5 @@
 import { initData } from "./telegram";
-import type { Category, Language, Product, ProductFilter, ProductPage, User } from "./types";
+import type { Cart, Category, Language, Product, ProductFilter, ProductPage, User } from "./types";
 
 /** Empty in development: Vite forwards /api to the backend. */
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
@@ -54,6 +54,18 @@ export const api = {
     ids.length
       ? request<ProductPage>(`/api/products?ids=${ids.join(",")}`).then((r) => r.products)
       : Promise.resolve([] as Product[]),
+
+  favorites: () => request<{ products: Product[] }>("/api/favorites").then((r) => r.products),
+  addFavorite: (id: string) => request<{ ok: true }>(`/api/favorites/${id}`, { method: "PUT" }),
+  removeFavorite: (id: string) => request<{ ok: true }>(`/api/favorites/${id}`, { method: "DELETE" }),
+
+  cart: () => request<{ cart: Cart }>("/api/cart").then((r) => r.cart),
+  /** Sets the quantity (0 removes) and returns the whole updated cart. */
+  setCartQuantity: (id: string, quantity: number) =>
+    request<{ cart: Cart }>(`/api/cart/${id}`, { method: "PUT", body: JSON.stringify({ quantity }) }).then(
+      (r) => r.cart
+    ),
+  clearCart: () => request<{ cart: Cart }>("/api/cart", { method: "DELETE" }).then((r) => r.cart),
 
   product: (id: string) => request<{ product: Product }>(`/api/products/${id}`).then((r) => r.product),
 };

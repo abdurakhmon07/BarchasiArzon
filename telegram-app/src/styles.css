@@ -132,3 +132,66 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .share { border: 0; background: var(--bg2); color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px 14px; border-radius: 999px; }
 [hidden] { display: none !important; }
 .sheet-row .badge { align-self: center; }
+
+/* ---------- Three tabs ---------- */
+.tabs button { font-size: 14px; padding: 10px 6px; }
+
+/* ---------- Card: ❤️ and + ---------- */
+.card { cursor: pointer; outline: none; }
+.card:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.heart {
+  border: 0; background: none; padding: 0; line-height: 1; font-size: 18px;
+  display: grid; place-items: center; transition: transform .15s;
+}
+.heart:active { transform: scale(1.25); }
+.heart-card {
+  position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%;
+  background: color-mix(in srgb, var(--bg) 85%, transparent); box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+}
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 30px; }
+.add {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; font-size: 18px; font-weight: 700; line-height: 1;
+  background: var(--accent); color: var(--accent-text); display: grid; place-items: center;
+}
+.add.in-cart { font-size: 14px; background: var(--ok); color: #fff; }
+.add:disabled { opacity: .6; }
+
+/* ---------- Product page: actions + cart ---------- */
+.sheet-actions { display: flex; align-items: center; gap: 8px; }
+.heart-sheet { width: 38px; height: 38px; border-radius: 50%; background: var(--bg2); font-size: 20px; }
+.sheet-cart { margin-top: 12px; }
+.btn-wide { width: 100%; padding: 14px; font-size: 16px; }
+.btn:disabled { opacity: .55; }
+
+/* ---------- − 1 + ---------- */
+.qty { display: inline-flex; align-items: center; background: var(--bg2); border-radius: 12px; }
+.qty button { border: 0; background: none; color: var(--accent); font-weight: 700; display: grid; place-items: center; }
+.qty button:disabled { opacity: .35; }
+.qty-value { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.qty-small button { width: 34px; height: 32px; font-size: 18px; }
+.qty-small .qty-value { min-width: 26px; }
+.qty-large { display: flex; justify-content: space-between; width: 100%; }
+.qty-large button { width: 64px; height: 50px; font-size: 24px; }
+.qty-large .qty-value { font-size: 20px; }
+
+/* ---------- Cart screen ---------- */
+.cart { min-height: 100vh; background: var(--bg2); padding-bottom: 24px; }
+.cart-head { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg); }
+.cart-head h1 { margin: 0; font-size: 22px; }
+.cart-lines { list-style: none; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.cart-line { display: flex; gap: 12px; padding: 10px; background: var(--card); border-radius: var(--radius); }
+.cart-line.unavailable .cart-photo, .cart-line.unavailable .cart-name, .cart-line.unavailable .cart-unit { opacity: .5; }
+.cart-photo { flex: none; width: 76px; height: 76px; padding: 0; border: 0; border-radius: 10px; overflow: hidden;
+  background: color-mix(in srgb, var(--hint) 14%, var(--card)); }
+.cart-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cart-name { border: 0; background: none; padding: 0; text-align: left; font-size: 15px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cart-unit { font-size: 13px; color: var(--hint); }
+.cart-warn { font-size: 12px; font-weight: 600; color: var(--bad); }
+.cart-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.cart-line-total { font-weight: 700; white-space: nowrap; }
+.cart-total { margin: 4px 12px 0; padding: 16px; background: var(--card); border-radius: var(--radius); }
+.cart-total-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.cart-total-row span { color: var(--hint); }
+.cart-total-row strong { font-size: 24px; }
+.link-danger { margin-top: 12px; border: 0; background: none; padding: 0; color: var(--bad); font-size: 14px; font-weight: 600; }

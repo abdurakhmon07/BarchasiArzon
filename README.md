@@ -61,6 +61,11 @@ Every request except photos must send `Authorization: tma <initData>` (Telegram'
 | | …plus optional `&q=text` (search by name), `&sort=name\|price_asc\|price_desc\|newest`, `&inStock=1` | |
 | GET | `/api/products?ids=a,b,c` | those products in that order (recently viewed) |
 | GET | `/api/products/:id` | one visible product |
+| GET | `/api/favorites` | the user's ❤️ products, newest first (hidden ones left out) |
+| PUT / DELETE | `/api/favorites/:productId` | add / remove a favorite |
+| GET | `/api/cart` | cart lines + `totalQuantity` + `totalAmount` (current prices; unavailable lines not counted) |
+| PUT | `/api/cart/:productId` | body `{ "quantity": 0..99 }`, 0 removes; returns the whole cart |
+| DELETE | `/api/cart` | empty the cart |
 | GET | `/api/photo/:fileId` | photo, public, but only for visible products |
 
 ## Notes

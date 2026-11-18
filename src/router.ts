@@ -14,4 +14,12 @@ router.get("/categories", shopController.getCategories);
 router.get("/products", shopController.getProducts);
 router.get("/products/:id", shopController.getProduct);
 
+router.get("/favorites", shopController.getFavorites);
+router.put("/favorites/:id", shopController.addFavorite);
+router.delete("/favorites/:id", shopController.removeFavorite);
+
+router.get("/cart", shopController.getCart);
+router.put("/cart/:id", shopController.setCartQuantity);
+router.delete("/cart", shopController.clearCart);
+
 export default router;

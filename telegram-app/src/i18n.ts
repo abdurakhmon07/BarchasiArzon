@@ -3,6 +3,8 @@ import type { Language, ProductStatus } from "./types";
 const texts = {
   catalog: { uz: "Katalog", ru: "Каталог", en: "Catalog" },
   special: { uz: "🔥 Maxsus narxlar", ru: "🔥 Спеццены", en: "🔥 Special prices" },
+  tabSpecial: { uz: "🔥 Maxsus", ru: "🔥 Спеццены", en: "🔥 Deals" },
+  tabFavorites: { uz: "❤️ Sevimli", ru: "❤️ Избранное", en: "❤️ Saved" },
   all: { uz: "Barchasi", ru: "Все", en: "All" },
   empty: { uz: "Bu yerda hozircha mahsulot yo'q.", ru: "Здесь пока нет товаров.", en: "No products here yet." },
   loading: { uz: "Yuklanmoqda…", ru: "Загрузка…", en: "Loading…" },
@@ -26,6 +28,30 @@ const texts = {
   recent: { uz: "Yaqinda ko'rilgan", ru: "Вы смотрели", en: "Recently viewed" },
   share: { uz: "Ulashish", ru: "Поделиться", en: "Share" },
   linkCopied: { uz: "Havola nusxalandi", ru: "Ссылка скопирована", en: "Link copied" },
+  noFavorites: {
+    uz: "Sevimlilar hozircha bo'sh. Mahsulotdagi ❤️ belgisini bosing.",
+    ru: "В избранном пока пусто. Нажмите ❤️ на товаре.",
+    en: "Nothing saved yet. Tap ❤️ on a product.",
+  },
+  addToCart: { uz: "Savatga qo'shish", ru: "В корзину", en: "Add to cart" },
+  soldOut: { uz: "Tugagan", ru: "Нет в наличии", en: "Out of stock" },
+  cart: { uz: "Savat", ru: "Корзина", en: "Cart" },
+  cartEmpty: { uz: "Savat bo'sh.", ru: "Корзина пуста.", en: "Your cart is empty." },
+  total: { uz: "Jami", ru: "Итого", en: "Total" },
+  clearCart: { uz: "Savatni tozalash", ru: "Очистить корзину", en: "Empty the cart" },
+  clearCartConfirm: { uz: "Savatni tozalaysizmi?", ru: "Очистить корзину?", en: "Empty the cart?" },
+  notAvailable: {
+    uz: "Hozir mavjud emas — jamiga qo'shilmagan",
+    ru: "Сейчас нет в наличии — не входит в итог",
+    en: "Not available now — not in the total",
+  },
+  unavailable: {
+    uz: "Bu mahsulot hozir mavjud emas.",
+    ru: "Этого товара сейчас нет в наличии.",
+    en: "This product isn't available right now.",
+  },
+  pcs: { uz: "ta", ru: "шт.", en: "pcs" },
+  remove: { uz: "O'chirish", ru: "Удалить", en: "Remove" },
 } as const;
 
 export type TextKey = keyof typeof texts;

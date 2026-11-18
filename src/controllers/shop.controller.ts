@@ -4,6 +4,9 @@ import UserService from "../models/User.service";
 import CategoryService from "../models/Category.service";
 import ProductService from "../models/Product.service";
 import PhotoService from "../models/Photo.service";
+import FavoriteService from "../models/Favorite.service";
+import CartService from "../models/Cart.service";
+import { CartSummary } from "../libs/types/cart";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { validateInitData } from "../libs/telegramAuth";
 import { API_PAGE_SIZE, INIT_DATA_MAX_AGE_SECONDS, requireEnv } from "../libs/config";
@@ -24,6 +27,8 @@ const userService = new UserService();
 const categoryService = new CategoryService();
 const productService = new ProductService();
 const photoService = new PhotoService();
+const favoriteService = new FavoriteService();
+const cartService = new CartService();
 
 interface ShopRequest extends Request {
   user: User;
@@ -177,6 +182,92 @@ shopController.getProduct = async (req: Request, res: Response) => {
     if (!product) throw new Errors(HttpCode.NOT_FOUND, Message.NO_PRODUCT);
     res.json({ product: productDto(product, (req as ShopRequest).user.language) });
   } catch (err) {
+    sendError(res, err);
+  }
+};
+
+/** FAVORITES **/
+
+/** GET /api/favorites — the user's ❤️ products, newest first */
+shopController.getFavorites = async (req: Request, res: Response) => {
+  try {
+    const { user } = req as ShopRequest;
+    const products = await favoriteService.getProducts(user._id);
+    res.json({ products: products.map((p) => productDto(p, user.language)) });
+  } catch (err) {
+    console.log("Error, getFavorites:", err);
+    sendError(res, err);
+  }
+};
+
+/** PUT /api/favorites/:id */
+shopController.addFavorite = async (req: Request, res: Response) => {
+  try {
+    await favoriteService.add((req as ShopRequest).user._id, req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    sendError(res, err);
+  }
+};
+
+/** DELETE /api/favorites/:id */
+shopController.removeFavorite = async (req: Request, res: Response) => {
+  try {
+    await favoriteService.remove((req as ShopRequest).user._id, req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    sendError(res, err);
+  }
+};
+
+/** CART (pick products and see the total; no ordering yet) **/
+
+function cartDto(cart: CartSummary, lang: Language) {
+  return {
+    lines: cart.lines.map((l) => ({
+      product: productDto(l.product, lang),
+      quantity: l.quantity,
+      available: l.available,
+      lineTotal: l.lineTotal,
+    })),
+    totalQuantity: cart.totalQuantity,
+    totalAmount: cart.totalAmount,
+  };
+}
+
+/** GET /api/cart */
+shopController.getCart = async (req: Request, res: Response) => {
+  try {
+    const { user } = req as ShopRequest;
+    res.json({ cart: cartDto(await cartService.getCart(user._id), user.language) });
+  } catch (err) {
+    console.log("Error, getCart:", err);
+    sendError(res, err);
+  }
+};
+
+/** PUT /api/cart/:id  { quantity: 0..99 }  (0 removes the line) — returns the whole cart */
+shopController.setCartQuantity = async (req: Request, res: Response) => {
+  try {
+    const { user } = req as ShopRequest;
+    // Only a real JSON number: Number(null) or Number("") would be 0 and silently remove the line.
+    const raw = req.body?.quantity;
+    const quantity = typeof raw === "number" ? raw : NaN;
+    const cart = await cartService.setQuantity(user._id, req.params.id, quantity);
+    res.json({ cart: cartDto(cart, user.language) });
+  } catch (err) {
+    if (!(err instanceof Errors)) console.log("Error, setCartQuantity:", err);
+    sendError(res, err);
+  }
+};
+
+/** DELETE /api/cart — empties the cart */
+shopController.clearCart = async (req: Request, res: Response) => {
+  try {
+    const { user } = req as ShopRequest;
+    res.json({ cart: cartDto(await cartService.clear(user._id), user.language) });
+  } catch (err) {
+    console.log("Error, clearCart:", err);
     sendError(res, err);
   }
 };

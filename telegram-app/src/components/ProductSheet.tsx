@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { haptic, tg } from "../telegram";
 import { formatPrice, t } from "../i18n";
 import type { Language, Product } from "../types";
-import { StatusBadge } from "./ProductCard";
+import { HeartButton, StatusBadge } from "./ProductCard";
+import QuantityControl from "./QuantityControl";
+import { useShop } from "../shop";
 import Gallery from "./Gallery";
 
 interface Props {
@@ -32,6 +34,10 @@ async function share(product: Product, lang: Language, botUsername: string) {
 
 /** Full-screen product view. Telegram's own Back button closes it. */
 export default function ProductSheet({ product, lang, botUsername, onClose }: Props) {
+  const { quantityOf, setQuantity, busy } = useShop();
+  const inCart = quantityOf(product.id);
+  const soldOut = product.status === "out_of_stock";
+
   useEffect(() => {
     const back = tg?.BackButton;
     back?.onClick(onClose);
@@ -54,9 +60,31 @@ export default function ProductSheet({ product, lang, botUsername, onClose }: Pr
         <div className="sheet-price">{formatPrice(product.price, lang)}</div>
         <div className="sheet-row">
           <StatusBadge status={product.status} lang={lang} />
-          {botUsername && (
-            <button className="share" onClick={() => share(product, lang, botUsername)}>
-              ↗ {t(lang, "share")}
+          <div className="sheet-actions">
+            {botUsername && (
+              <button className="share" onClick={() => share(product, lang, botUsername)}>
+                ↗ {t(lang, "share")}
+              </button>
+            )}
+            <HeartButton product={product} className="heart-sheet" />
+          </div>
+        </div>
+
+        <div className="sheet-cart">
+          {soldOut ? (
+            <button className="btn btn-wide" disabled>
+              {t(lang, "soldOut")}
+            </button>
+          ) : inCart ? (
+            <QuantityControl
+              size="large"
+              quantity={inCart}
+              disabled={busy}
+              onChange={(q) => setQuantity(product, q)}
+            />
+          ) : (
+            <button className="btn btn-wide" disabled={busy} onClick={() => setQuantity(product, 1)}>
+              🛒 {t(lang, "addToCart")}
             </button>
           )}
         </div>

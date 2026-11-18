@@ -33,7 +33,7 @@ export interface ProductPage {
   total: number;
 }
 
-export type Section = "general" | "special";
+export type Section = "general" | "special" | "favorites";
 
 export type Sort = "name" | "price_asc" | "price_desc" | "newest";
 
@@ -44,4 +44,17 @@ export interface ProductFilter {
   q: string;
   sort: Sort | null; // null = the section's default order
   inStock: boolean;
+}
+
+export interface CartLine {
+  product: Product;
+  quantity: number;
+  available: boolean; // false = now out of stock or hidden: kept, but not counted
+  lineTotal: number;
+}
+
+export interface Cart {
+  lines: CartLine[];
+  totalQuantity: number;
+  totalAmount: number; // so'm, at current prices
 }

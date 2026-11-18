@@ -8,6 +8,9 @@ export const BOT_PAGE_SIZE = 8;
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
+/** Largest quantity of one product in the cart. */
+export const MAX_CART_QUANTITY = 99;
+
 /** Extra photos per product, besides the main one. */
 export const MAX_GALLERY_PHOTOS = 5;
 
