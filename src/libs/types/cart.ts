@@ -14,4 +14,5 @@ export interface CartSummary {
   lines: CartLine[];
   totalQuantity: number; // pieces of available products
   totalAmount: number; // so'm, available products only, at current prices
+  totalSaving: number; // so'm saved thanks to discounts (old price − price), available products only
 }

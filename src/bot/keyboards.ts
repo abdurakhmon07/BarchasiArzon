@@ -26,7 +26,7 @@ export function mainMenu(lang: Language, isAdmin: boolean): Keyboard {
 export function categoriesKeyboard(categories: Category[], lang: Language): InlineKeyboard {
   const kb = new InlineKeyboard();
   categories.forEach((c, i) => {
-    kb.text(localized(c, "name", lang), `cat:${c._id}:1`);
+    kb.text(`${c.icon ? c.icon + " " : ""}${localized(c, "name", lang)}`, `cat:${c._id}:1`);
     if (i % 2 === 1) kb.row();
   });
   return kb;

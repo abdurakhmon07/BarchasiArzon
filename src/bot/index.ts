@@ -42,7 +42,9 @@ function productCaption(p: Product, lang: Language): string {
   const lines = [
     `<b>${escapeHtml(localized(p, "name", lang))}</b>`,
     p.isSpecial ? t(lang, "specialTitle") : "",
-    `${t(lang, "price")}: <b>${formatPrice(p.price, lang)}</b>`,
+    p.discountPercent > 0 && p.oldPrice
+      ? `${t(lang, "price")}: <b>${formatPrice(p.price, lang)}</b> <s>${formatPrice(p.oldPrice, lang)}</s> −${p.discountPercent}%`
+      : `${t(lang, "price")}: <b>${formatPrice(p.price, lang)}</b>`,
     statusText(lang, p.status),
   ].filter(Boolean);
   const desc = localized(p, "description", lang);

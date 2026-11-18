@@ -8,6 +8,7 @@
   <h2>Add category</h2>
   <div class="grid-name-order">
     <label>Name <input name="name" required maxlength="100" placeholder="Tozalash vositalari" /></label>
+    <label>Icon <input name="icon" maxlength="16" placeholder="🧽" class="icon-input" /></label>
     <label>Order <input name="sortOrder" type="number" value="0" /></label>
   </div>
   <div class="form-actions"><button class="btn btn-primary" type="submit">Add</button></div>
@@ -21,10 +22,11 @@
 <% }) %>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Order</th><th class="num">Products</th><th></th></tr></thead>
+  <thead><tr><th>Icon</th><th>Name</th><th>Order</th><th class="num">Products</th><th></th></tr></thead>
   <tbody>
   <% categories.forEach(c => { const n = counts[String(c._id)] || 0; %>
     <tr>
+      <td><input form="cat-<%= c._id %>" name="icon" maxlength="16" class="icon-input" value="<%= c.icon || "" %>" placeholder="🧽" /></td>
       <td><input form="cat-<%= c._id %>" name="name" required maxlength="100" value="<%= c.nameUz %>" /></td>
       <td><input form="cat-<%= c._id %>" name="sortOrder" type="number" class="short" value="<%= c.sortOrder %>" /></td>
       <td class="num"><a href="/admin/products?category=<%= c._id %>"><%= n %></a></td>

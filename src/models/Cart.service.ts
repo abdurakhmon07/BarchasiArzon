@@ -45,6 +45,10 @@ class CartService {
       lines,
       totalQuantity: counted.reduce((sum, l) => sum + l.quantity, 0),
       totalAmount: counted.reduce((sum, l) => sum + l.lineTotal, 0),
+      totalSaving: counted.reduce((sum, l) => {
+        const { oldPrice, price } = l.product;
+        return sum + (oldPrice && oldPrice > price ? (oldPrice - price) * l.quantity : 0);
+      }, 0),
     };
   }
 

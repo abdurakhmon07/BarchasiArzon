@@ -10,6 +10,7 @@ router.use(shopController.verifyTelegram);
 
 router.get("/me", shopController.getMe);
 router.patch("/me/language", shopController.setLanguage);
+router.get("/home", shopController.getHome);
 router.get("/categories", shopController.getCategories);
 router.get("/products", shopController.getProducts);
 router.get("/products/:id", shopController.getProduct);

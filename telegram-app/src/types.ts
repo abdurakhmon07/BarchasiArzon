@@ -12,6 +12,8 @@ export interface User {
 export interface Category {
   id: string;
   name: string;
+  icon: string | null; // emoji set by the admin
+  dealCount: number; // special-price products in this category
 }
 
 export interface Product {
@@ -20,6 +22,9 @@ export interface Product {
   name: string;
   description: string | null;
   price: number;
+  oldPrice: number | null; // price before discount (only when there is a discount)
+  discountPercent: number; // 0 = no discount
+  saving: number; // oldPrice − price, so'm
   status: ProductStatus;
   isSpecial: boolean;
   photoUrl: string | null; // main photo
@@ -33,9 +38,13 @@ export interface ProductPage {
   total: number;
 }
 
-export type Section = "general" | "special" | "favorites";
+/** Which products a list shows: catalog, deals (Aksiyalar), or both (home search). */
+export type Section = "general" | "special" | "all";
 
-export type Sort = "name" | "price_asc" | "price_desc" | "newest";
+/** Bottom navigation tabs. */
+export type Tab = "home" | "catalog" | "deals" | "favorites" | "cart";
+
+export type Sort = "name" | "price_asc" | "price_desc" | "newest" | "discount";
 
 /** Everything that decides which products the list shows. */
 export interface ProductFilter {
@@ -44,6 +53,15 @@ export interface ProductFilter {
   q: string;
   sort: Sort | null; // null = the section's default order
   inStock: boolean;
+  minDiscount: number; // 0 = any
+}
+
+/** GET /api/home */
+export interface Home {
+  dealCount: number;
+  maxDiscount: number;
+  totalSaving: number;
+  topDeals: Product[];
 }
 
 export interface CartLine {
@@ -57,4 +75,6 @@ export interface Cart {
   lines: CartLine[];
   totalQuantity: number;
   totalAmount: number; // so'm, at current prices
+  totalSaving: number; // so'm saved thanks to discounts
+  totalRegular: number; // what it would cost at old prices
 }

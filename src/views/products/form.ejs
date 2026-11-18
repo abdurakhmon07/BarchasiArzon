@@ -18,8 +18,14 @@
       </select>
     </label>
     <label>Price (so'm, whole number)
-      <input name="price" inputmode="numeric" pattern="[0-9 ,]+" required value="<%= p.price ?? "" %>" placeholder="25000" />
+      <input name="price" inputmode="numeric" pattern="[0-9 ,]+" required value="<%= p.price ?? "" %>" placeholder="26000" />
     </label>
+  </div>
+  <div class="grid-2">
+    <label>Old price — optional (shown crossed out, discount is calculated)
+      <input name="oldPrice" inputmode="numeric" pattern="[0-9 ,]*" value="<%= p.oldPrice ?? "" %>" placeholder="40000" />
+    </label>
+    <div class="checks"><% if (p.discountPercent) { %><span class="pill pill-hot">−<%= p.discountPercent %>% now</span><% } %></div>
   </div>
 
   <fieldset>

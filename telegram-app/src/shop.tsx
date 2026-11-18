@@ -21,7 +21,7 @@ interface Shop {
   busy: boolean; // a cart change is on its way
 }
 
-const EMPTY_CART: Cart = { lines: [], totalQuantity: 0, totalAmount: 0 };
+const EMPTY_CART: Cart = { lines: [], totalQuantity: 0, totalAmount: 0, totalSaving: 0, totalRegular: 0 };
 const ShopContext = createContext<Shop | null>(null);
 
 export function ShopProvider({ lang, children }: { lang: Language; children: ReactNode }) {

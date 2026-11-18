@@ -10,4 +10,5 @@ export enum ProductSort {
   PRICE_ASC = "price_asc",
   PRICE_DESC = "price_desc",
   NEWEST = "newest",
+  DISCOUNT = "discount", // biggest discount first
 }

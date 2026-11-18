@@ -44,6 +44,7 @@ async function readInput(req: Request, currentGallery: string[] = []): Promise<P
     descriptionRu: null,
     descriptionEn: null,
     price: parsePrice(b.price),
+    oldPrice: String(b.oldPrice ?? "").trim() === "" ? null : parsePrice(b.oldPrice),
     status: b.status as ProductStatus,
     isSpecial: b.isSpecial === "on",
     isVisible: b.isVisible === "on",

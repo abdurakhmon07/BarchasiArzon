@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { formatPrice, t } from "../i18n";
+import { t } from "../i18n";
 import type { Language, Product } from "../types";
-import { Photo } from "./ProductCard";
+import { DiscountBadge, Photo, PriceLine } from "./ProductCard";
 
 interface Props {
   ids: string[];
@@ -29,16 +29,19 @@ export default function RecentRow({ ids, lang, onOpen }: Props) {
   if (!products.length) return null;
 
   return (
-    <section className="recent">
-      <h2 className="recent-title">{t(lang, "recent")}</h2>
-      <div className="recent-row">
+    <section>
+      <div className="sec-head">
+        <h2>🕘 {t(lang, "recent")}</h2>
+      </div>
+      <div className="hscroll">
         {products.map((p) => (
-          <button key={p.id} className="recent-item" onClick={() => onOpen(p)}>
-            <div className="recent-photo">
+          <button key={p.id} className="mini-card" onClick={() => onOpen(p)}>
+            <div className="mini-photo">
               <Photo url={p.photoUrl} alt={p.name} />
+              <DiscountBadge percent={p.discountPercent} />
             </div>
-            <div className="recent-name">{p.name}</div>
-            <div className="recent-price">{formatPrice(p.price, lang)}</div>
+            <PriceLine product={p} lang={lang} />
+            <div className="mini-name">{p.name}</div>
           </button>
         ))}
       </div>

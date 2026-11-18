@@ -83,7 +83,8 @@ input.short { max-width: 80px; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: 2fr 2fr 2fr 1fr; }
-.grid-name-order { display: grid; gap: 12px; grid-template-columns: 1fr 120px; }
+.grid-name-order { display: grid; gap: 12px; grid-template-columns: 1fr 90px 120px; }
+.icon-input { max-width: 70px; text-align: center; font-size: 18px; }
 .checks { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; }
 .form .check { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 15px; }
 .form-actions { margin-top: 18px; }

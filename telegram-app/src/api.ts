@@ -1,5 +1,5 @@
 import { initData } from "./telegram";
-import type { Cart, Category, Language, Product, ProductFilter, ProductPage, User } from "./types";
+import type { Cart, Category, Home, Language, Product, ProductFilter, ProductPage, User } from "./types";
 
 /** Empty in development: Vite forwards /api to the backend. */
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
@@ -38,6 +38,8 @@ export const api = {
       (r) => r.user
     ),
 
+  home: () => request<Home>("/api/home"),
+
   categories: () => request<{ categories: Category[] }>("/api/categories").then((r) => r.categories),
 
   products: (filter: ProductFilter, page: number) => {
@@ -46,6 +48,7 @@ export const api = {
     if (filter.q) q.set("q", filter.q);
     if (filter.sort) q.set("sort", filter.sort);
     if (filter.inStock) q.set("inStock", "1");
+    if (filter.minDiscount) q.set("minDiscount", String(filter.minDiscount));
     return request<ProductPage>(`/api/products?${q}`);
   },
 

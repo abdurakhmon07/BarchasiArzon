@@ -6,6 +6,7 @@ import type { Language, Product, ProductFilter } from "./types";
 export function useProducts(filter: ProductFilter, lang: Language | null) {
   const [products, setProducts] = useState<Product[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +32,7 @@ export function useProducts(filter: ProductFilter, lang: Language | null) {
         state.current.page = res.page;
         state.current.hasMore = res.hasMore;
         setHasMore(res.hasMore);
+        setTotal(res.total);
       } catch (err) {
         if (id !== requestId.current) return;
         state.current.failed = true;
@@ -50,6 +52,7 @@ export function useProducts(filter: ProductFilter, lang: Language | null) {
     state.current = { page: 0, busy: false, hasMore: true, failed: false };
     setProducts([]);
     setHasMore(true);
+    setTotal(null);
     load(1);
   }, [load]);
 
@@ -60,5 +63,5 @@ export function useProducts(filter: ProductFilter, lang: Language | null) {
 
   const retry = useCallback(() => load(state.current.page + 1), [load]);
 
-  return { products, loading, hasMore, error, loadMore, retry };
+  return { products, total, loading, hasMore, error, loadMore, retry };
 }

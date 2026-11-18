@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { haptic, tg } from "../telegram";
-import { formatPrice, t } from "../i18n";
-import type { Language, Product } from "../types";
-import { HeartButton, StatusBadge } from "./ProductCard";
-import QuantityControl from "./QuantityControl";
+import { formatNumber, formatPrice, t } from "../i18n";
 import { useShop } from "../shop";
+import type { Language, Product } from "../types";
+import { DiscountBadge, HeartButton, PriceLine, StatusDot } from "./ProductCard";
+import QuantityControl from "./QuantityControl";
 import Gallery from "./Gallery";
 
 interface Props {
@@ -18,7 +18,8 @@ interface Props {
 async function share(product: Product, lang: Language, botUsername: string) {
   haptic();
   const link = `https://t.me/${botUsername}?start=p_${product.id}`;
-  const text = `${product.name} — ${formatPrice(product.price, lang)}`;
+  const deal = product.discountPercent > 0 ? ` (−${product.discountPercent}%)` : "";
+  const text = `${product.name} — ${formatPrice(product.price, lang)}${deal}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
   if (tg?.openTelegramLink) {
     tg.openTelegramLink(shareUrl);
@@ -37,6 +38,7 @@ export default function ProductSheet({ product, lang, botUsername, onClose }: Pr
   const { quantityOf, setQuantity, busy } = useShop();
   const inCart = quantityOf(product.id);
   const soldOut = product.status === "out_of_stock";
+  const deal = product.discountPercent > 0;
 
   useEffect(() => {
     const back = tg?.BackButton;
@@ -50,55 +52,74 @@ export default function ProductSheet({ product, lang, botUsername, onClose }: Pr
   }, [onClose]);
 
   return (
-    <div className="sheet" role="dialog" aria-label={product.name}>
-      <div className="sheet-photo">
+    <div className="pview" role="dialog" aria-label={product.name}>
+      <div className={`pphoto ${deal ? "pphoto-deal" : ""}`}>
         <Gallery photos={product.photos} alt={product.name} />
-      </div>
-      <div className="sheet-body">
-        {product.isSpecial && <div className="sheet-special">{t(lang, "special")}</div>}
-        <h1 className="sheet-name">{product.name}</h1>
-        <div className="sheet-price">{formatPrice(product.price, lang)}</div>
-        <div className="sheet-row">
-          <StatusBadge status={product.status} lang={lang} />
-          <div className="sheet-actions">
-            {botUsername && (
-              <button className="share" onClick={() => share(product, lang, botUsername)}>
-                ↗ {t(lang, "share")}
-              </button>
-            )}
-            <HeartButton product={product} className="heart-sheet" />
-          </div>
-        </div>
-
-        <div className="sheet-cart">
-          {soldOut ? (
-            <button className="btn btn-wide" disabled>
-              {t(lang, "soldOut")}
-            </button>
-          ) : inCart ? (
-            <QuantityControl
-              size="large"
-              quantity={inCart}
-              disabled={busy}
-              onChange={(q) => setQuantity(product, q)}
-            />
-          ) : (
-            <button className="btn btn-wide" disabled={busy} onClick={() => setQuantity(product, 1)}>
-              🛒 {t(lang, "addToCart")}
+        <DiscountBadge percent={product.discountPercent} size="big" />
+        <div className="ptools">
+          {botUsername && (
+            <button className="round" aria-label={t(lang, "share")} onClick={() => share(product, lang, botUsername)}>
+              ↗
             </button>
           )}
+          <HeartButton product={product} className="round" />
         </div>
+        {!tg?.initData && (
+          <button className="round pclose" onClick={onClose} aria-label={t(lang, "close")}>
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="psheet">
+        <PriceLine product={product} lang={lang} big />
+        <h1 className="pname">{product.name}</h1>
+
+        {deal && (
+          <div className="savebox">
+            <b aria-hidden>💰</b>
+            <div>
+              <strong>{t(lang, "youSave", { n: formatPrice(product.saving, lang) })}</strong>
+              {t(lang, "cheaperBy", { p: product.discountPercent })}
+            </div>
+          </div>
+        )}
+
+        <div className="chips">
+          <span className={`chip chip-${product.status}`}>
+            <StatusDot status={product.status} lang={lang} />
+          </span>
+          {product.isSpecial && <span className="chip">{t(lang, "dealChip")}</span>}
+        </div>
+
         {product.description && (
           <>
-            <h2 className="sheet-h2">{t(lang, "description")}</h2>
-            <p className="sheet-desc">{product.description}</p>
+            <h2 className="ptitle">{t(lang, "description")}</h2>
+            <p className="pdesc">{product.description}</p>
           </>
         )}
-        {/* Fallback for opening the page outside Telegram, where there is no Back button */}
-        {!tg?.initData && (
-          <button className="btn" onClick={onClose}>
-            {t(lang, "close")}
+      </div>
+
+      <div className="buybar">
+        {soldOut ? (
+          <button className="cta" disabled>
+            {t(lang, "soldOut")}
           </button>
+        ) : inCart ? (
+          <>
+            <QuantityControl size="large" quantity={inCart} disabled={busy} onChange={(q) => setQuantity(product, q)} />
+            <div className="cta cta-ghost">{t(lang, "inCart", { n: formatPrice(product.price * inCart, lang) })}</div>
+          </>
+        ) : (
+          <>
+            <div className="buyprice">
+              <small>{t(lang, deal ? "dealPrice" : "price")}</small>
+              <b className={deal ? "deal" : ""}>{formatNumber(product.price)}</b>
+            </div>
+            <button className="cta" disabled={busy} onClick={() => setQuantity(product, 1)}>
+              🛒 {t(lang, "addToCart")}
+            </button>
+          </>
         )}
       </div>
     </div>

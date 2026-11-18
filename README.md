@@ -45,6 +45,8 @@ src/
 | `created_at` / `updated_at` | Mongoose `timestamps` |
 | — | `logintokens`: one-time admin login links (deleted automatically by a TTL index) |
 
+**Old price (`oldPrice`)**: optional, must be higher than the price. `discountPercent` is calculated from it on every save and stored, so the Mini App can sort and filter by discount. Categories have an optional emoji `icon`.
+
 Business rules enforced in code: only admins can edit; customers only see `isVisible` products; the special section shows `isSpecial` products and the general catalog shows the rest; prices are whole so'm; a category that still has products can't be deleted.
 
 ## Mini App API
@@ -55,10 +57,11 @@ Every request except photos must send `Authorization: tma <initData>` (Telegram'
 |---|---|---|
 | GET | `/api/me` | the user (creates them if new) and the bot's username (for share links) |
 | PATCH | `/api/me/language` | body `{ "language": "uz" \| "ru" \| "en" }` |
-| GET | `/api/categories` | categories, names in the user's language |
+| GET | `/api/home` | top deals (biggest discount first), `dealCount`, `maxDiscount`, `totalSaving` |
+| GET | `/api/categories` | categories in the user's language, with `icon` and `dealCount` |
 | GET | `/api/products?section=general&categoryId=…&page=1` | visible, non-special products (20 per page) |
 | GET | `/api/products?section=special&page=1` | visible special-price products |
-| | …plus optional `&q=text` (search by name), `&sort=name\|price_asc\|price_desc\|newest`, `&inStock=1` | |
+| | …plus optional `&q=text`, `&sort=name\|price_asc\|price_desc\|newest\|discount`, `&inStock=1`, `&minDiscount=30`, and `section=all` (both sections, for search) | |
 | GET | `/api/products?ids=a,b,c` | those products in that order (recently viewed) |
 | GET | `/api/products/:id` | one visible product |
 | GET | `/api/favorites` | the user's ❤️ products, newest first (hidden ones left out) |

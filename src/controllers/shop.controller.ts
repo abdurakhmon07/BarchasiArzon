@@ -50,6 +50,10 @@ function productDto(p: Product, lang: Language) {
     name: localized(p, "name", lang),
     description: localized(p, "description", lang) || null,
     price: p.price,
+    // Old price and savings only when there really is a discount.
+    oldPrice: p.discountPercent > 0 ? p.oldPrice ?? null : null,
+    discountPercent: p.discountPercent ?? 0,
+    saving: p.discountPercent > 0 && p.oldPrice ? p.oldPrice - p.price : 0,
     status: p.status,
     isSpecial: p.isSpecial,
     photoUrl: photos.length ? photoUrl(photos[0]) : null, // main photo (cards)
@@ -57,8 +61,8 @@ function productDto(p: Product, lang: Language) {
   };
 }
 
-function categoryDto(c: Category, lang: Language) {
-  return { id: String(c._id), name: localized(c, "name", lang) };
+function categoryDto(c: Category, lang: Language, dealCount = 0) {
+  return { id: String(c._id), name: localized(c, "name", lang), icon: c.icon ?? null, dealCount };
 }
 
 function userDto(u: User) {
@@ -123,10 +127,30 @@ shopController.setLanguage = async (req: Request, res: Response) => {
 shopController.getCategories = async (req: Request, res: Response) => {
   try {
     const lang = (req as ShopRequest).user.language;
-    const categories = await categoryService.getAll();
-    res.json({ categories: categories.map((c) => categoryDto(c, lang)) });
+    const [categories, deals] = await Promise.all([categoryService.getAll(), productService.getDealsSummary(0)]);
+    res.json({ categories: categories.map((c) => categoryDto(c, lang, deals.dealsByCategory[String(c._id)] ?? 0)) });
   } catch (err) {
     console.log("Error, getCategories:", err);
+    sendError(res, err);
+  }
+};
+
+/**
+ * GET /api/home — everything the home screen and the Aksiyalar header need about deals:
+ * top deals (biggest discount first), how many deals, biggest %, and the total you could save.
+ */
+shopController.getHome = async (req: Request, res: Response) => {
+  try {
+    const lang = (req as ShopRequest).user.language;
+    const deals = await productService.getDealsSummary(10);
+    res.json({
+      dealCount: deals.dealCount,
+      maxDiscount: deals.maxDiscount,
+      totalSaving: deals.totalSaving,
+      topDeals: deals.topDeals.map((p) => productDto(p, lang)),
+    });
+  } catch (err) {
+    console.log("Error, getHome:", err);
     sendError(res, err);
   }
 };
@@ -147,9 +171,11 @@ shopController.getProducts = async (req: Request, res: Response) => {
       return res.json({ products: items.map((p) => productDto(p, lang)), page: 1, hasMore: false, total: items.length });
     }
 
-    const isSpecial = req.query.section === "special";
+    // section: general (catalog) | special (Aksiyalar) | all (home screen search)
+    const isSpecial = req.query.section === "special" ? true : req.query.section === "all" ? undefined : false;
+    const minDiscount = Math.min(99, Math.max(0, Number.parseInt(String(req.query.minDiscount ?? "0"), 10) || 0));
     const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
-    const categoryId = !isSpecial && req.query.categoryId ? String(req.query.categoryId) : undefined;
+    const categoryId = req.query.categoryId ? String(req.query.categoryId) : undefined;
     const search = String(req.query.q ?? "").trim().slice(0, 100) || undefined;
     const sortParam = String(req.query.sort ?? "") as ProductSort;
     const sort = Object.values(ProductSort).includes(sortParam) ? sortParam : undefined;
@@ -160,6 +186,7 @@ shopController.getProducts = async (req: Request, res: Response) => {
       search,
       sort,
       inStockOnly: req.query.inStock === "1",
+      minDiscount: minDiscount || undefined,
       page,
       limit: API_PAGE_SIZE,
     });
@@ -232,6 +259,8 @@ function cartDto(cart: CartSummary, lang: Language) {
     })),
     totalQuantity: cart.totalQuantity,
     totalAmount: cart.totalAmount,
+    totalSaving: cart.totalSaving,
+    totalRegular: cart.totalAmount + cart.totalSaving, // what it would cost without discounts
   };
 }
 

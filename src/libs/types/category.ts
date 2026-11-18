@@ -5,6 +5,7 @@ export interface Category {
   nameUz: string;
   nameRu?: string | null;
   nameEn?: string | null;
+  icon?: string | null;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
@@ -14,5 +15,6 @@ export interface CategoryInput {
   nameUz: string;
   nameRu?: string | null;
   nameEn?: string | null;
+  icon?: string | null;
   sortOrder?: number;
 }

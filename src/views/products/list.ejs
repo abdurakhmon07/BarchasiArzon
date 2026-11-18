@@ -44,7 +44,8 @@
         <a href="/admin/products/<%= p._id %>/edit"><b><%= p.nameUz %></b></a>
       </td>
       <td><%= p.categoryId && p.categoryId.nameUz ? p.categoryId.nameUz : "—" %></td>
-      <td class="num"><%= price(p.price) %></td>
+      <td class="num"><%= price(p.price) %>
+        <% if (p.oldPrice) { %><div class="muted small"><s><%= price(p.oldPrice) %></s> · −<%= p.discountPercent %>%</div><% } %></td>
       <td>
         <form method="post" action="/admin/products/<%= p._id %>/quick" class="inline">
           <input type="hidden" name="action" value="status" />

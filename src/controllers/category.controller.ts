@@ -13,6 +13,7 @@ function readInput(body: T): CategoryInput {
     nameUz: String(body.name ?? "").trim(),
     nameRu: null,
     nameEn: null,
+    icon: String(body.icon ?? "").trim().slice(0, 16) || null,
     sortOrder: Number.parseInt(body.sortOrder, 10) || 0,
   };
 }

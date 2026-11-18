@@ -2,65 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { guessLanguage, t } from "./i18n";
 import { haptic, initData, tg } from "./telegram";
-import { useProducts } from "./useProducts";
 import { loadRecent, rememberViewed } from "./recent";
-import ProductCard from "./components/ProductCard";
+import { ShopProvider } from "./shop";
 import ProductSheet from "./components/ProductSheet";
-import Toolbar from "./components/Toolbar";
-import RecentRow from "./components/RecentRow";
-import CartScreen from "./components/CartScreen";
-import { ShopProvider, useShop } from "./shop";
-import { formatPrice } from "./i18n";
-import type { Category, Language, Product, ProductFilter, Section, User } from "./types";
-
-const LANGS: Language[] = ["uz", "ru", "en"];
-
-/**
- * Telegram's big button at the bottom of the screen: "🛒 Cart · 3 pcs · 157 000 so'm".
- * Shown while the cart has something in it and the cart screen isn't open.
- */
-function CartMainButton({ lang, hidden, onOpen }: { lang: Language; hidden: boolean; onOpen: () => void }) {
-  const { cart } = useShop();
-  const visible = !hidden && cart.totalQuantity > 0;
-  const text = `🛒 ${t(lang, "cart")} · ${cart.totalQuantity} ${t(lang, "pcs")} · ${formatPrice(cart.totalAmount, lang)}`;
-
-  useEffect(() => {
-    const button = tg?.MainButton;
-    if (!button) return;
-    if (!visible) {
-      button.hide();
-      return;
-    }
-    button.setText(text);
-    button.show();
-    button.onClick(onOpen);
-    return () => {
-      button.offClick(onOpen);
-    };
-  }, [visible, text, onOpen]);
-
-  useEffect(
-    () => () => {
-      tg?.MainButton?.hide();
-    },
-    [],
-  );
-  return null;
-}
-
-/** The ❤️ tab. */
-function FavoritesGrid({ lang, onOpen }: { lang: Language; onOpen: (p: Product) => void }) {
-  const { favorites, reloadFavorites } = useShop();
-  useEffect(reloadFavorites, [reloadFavorites]); // fresh list each time the tab opens
-  if (!favorites.length) return <div className="center muted">{t(lang, "noFavorites")}</div>;
-  return (
-    <main className="grid">
-      {favorites.map((p) => (
-        <ProductCard key={p.id} product={p} lang={lang} onOpen={onOpen} />
-      ))}
-    </main>
-  );
-}
+import BottomNav from "./components/BottomNav";
+import HomeScreen from "./screens/HomeScreen";
+import CatalogScreen from "./screens/CatalogScreen";
+import DealsScreen from "./screens/DealsScreen";
+import FavoritesScreen from "./screens/FavoritesScreen";
+import CartScreen from "./screens/CartScreen";
+import type { Category, Home, Language, Product, Tab, User } from "./types";
 
 /** Product id from a shared link: ?product=<id> (bot button) or start_param p_<id> (t.me/...?startapp=). */
 function sharedProductId(): string | null {
@@ -70,58 +21,62 @@ function sharedProductId(): string | null {
   return id && /^[a-f0-9]{24}$/.test(id) ? id : null;
 }
 
+type Preset = { categoryId: string | null; n: number };
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [filter, setFilter] = useState<ProductFilter>({
-    section: "general",
-    categoryId: null,
-    q: "",
-    sort: null,
-    inStock: false,
-  });
-  const [opened, setOpened] = useState<Product | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [home, setHome] = useState<Home | null>(null);
   const [recentIds, setRecentIds] = useState<string[]>([]);
-  const listScroll = useRef(0);
+  const [tab, setTab] = useState<Tab>("home");
+  const [opened, setOpened] = useState<Product | null>(null);
+  // Home → a category or "see all" opens Deals/Catalog with that filter; n changes on every jump.
+  const [dealsPreset, setDealsPreset] = useState<Preset>({ categoryId: null, n: 0 });
+  const [catalogPreset, setCatalogPreset] = useState<Preset>({ categoryId: null, n: 0 });
+  const scrollByTab = useRef<Partial<Record<Tab, number>>>({});
+  const tabRef = useRef<Tab>("home");
 
   const lang: Language = user?.language ?? guessLanguage(tg?.initDataUnsafe?.user?.language_code);
-  const favoritesTab = filter.section === "favorites";
-  // The favorites tab has its own list, so the catalog list doesn't load meanwhile.
-  const { products, loading, hasMore, error, loadMore, retry } = useProducts(
-    filter,
-    user && !favoritesTab ? user.language : null,
-  );
-  const update = (patch: Partial<ProductFilter>) => setFilter((f) => ({ ...f, ...patch }));
+
+  /** Switch tab, remembering where each tab was scrolled to. */
+  const goTab = useCallback((next: Tab) => {
+    scrollByTab.current[tabRef.current] = window.scrollY;
+    tabRef.current = next;
+    setOpened(null);
+    setTab(next);
+    requestAnimationFrame(() => window.scrollTo(0, scrollByTab.current[next] ?? 0));
+  }, []);
 
   const openProduct = useCallback((p: Product) => {
     haptic();
-    if (!document.querySelector(".app[hidden]")) listScroll.current = window.scrollY;
+    scrollByTab.current[tabRef.current] = window.scrollY;
     setOpened(p);
     setRecentIds((ids) => rememberViewed(ids, p.id));
   }, []);
 
-  const restoreScroll = () => requestAnimationFrame(() => window.scrollTo(0, listScroll.current));
-
-  // Back from a product returns to wherever it was opened from (the list or the cart).
-  const closeSheet = useCallback(() => {
+  const closeProduct = useCallback(() => {
     setOpened(null);
-    if (!cartOpen) restoreScroll();
-  }, [cartOpen]);
-
-  const openCart = useCallback(() => {
-    haptic();
-    if (!document.querySelector(".app[hidden]")) listScroll.current = window.scrollY;
-    setOpened(null);
-    setCartOpen(true);
+    requestAnimationFrame(() => window.scrollTo(0, scrollByTab.current[tabRef.current] ?? 0));
   }, []);
 
-  const closeCart = useCallback(() => {
-    setCartOpen(false);
-    restoreScroll();
-  }, []);
+  const openDeals = useCallback(
+    (categoryId?: string) => {
+      setDealsPreset((p) => ({ categoryId: categoryId ?? null, n: p.n + 1 }));
+      scrollByTab.current.deals = 0;
+      goTab("deals");
+    },
+    [goTab]
+  );
+  const openCatalog = useCallback(
+    (categoryId?: string) => {
+      setCatalogPreset((p) => ({ categoryId: categoryId ?? null, n: p.n + 1 }));
+      scrollByTab.current.catalog = 0;
+      goTab("catalog");
+    },
+    [goTab]
+  );
 
   // Who is this? (the backend checks Telegram's signature and remembers the language)
   const boot = useCallback(() => {
@@ -133,11 +88,7 @@ export default function App() {
         setBotUsername(r.botUsername);
         // Opened from a shared link → show that product straight away.
         const id = sharedProductId();
-        if (id)
-          api
-            .product(id)
-            .then(openProduct)
-            .catch(() => undefined);
+        if (id) api.product(id).then(openProduct).catch(() => undefined);
       })
       .catch((e) => setBootError(e.message));
   }, [openProduct]);
@@ -148,26 +99,15 @@ export default function App() {
     loadRecent().then(setRecentIds);
   }, [boot]);
 
-  // Category names come back in the user's language, so reload them when it changes.
+  // Names come back in the user's language: reload when it changes. Home also refreshes each time it's shown.
   useEffect(() => {
     if (!user) return;
-    api
-      .categories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
+    api.categories().then(setCategories).catch(() => setCategories([]));
   }, [user?.language]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load the next page when the user scrolls near the bottom.
-  const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => entries[0].isIntersecting && loadMore(), {
-      rootMargin: "400px",
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [loadMore, opened]);
+    if (!user || (tab !== "home" && home)) return;
+    api.home().then(setHome).catch(() => undefined);
+  }, [user?.language, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeLanguage = async (next: Language) => {
     if (!user || next === user.language) return;
@@ -181,11 +121,11 @@ export default function App() {
   };
 
   if (!initData) {
-    return <div className="center">{t(lang, "openInTelegram")}</div>;
+    return <div className="empty big">{t(lang, "openInTelegram")}</div>;
   }
   if (bootError) {
     return (
-      <div className="center">
+      <div className="empty big">
         <p>{bootError}</p>
         <button className="btn" onClick={boot}>
           {t(lang, "retry")}
@@ -193,106 +133,55 @@ export default function App() {
       </div>
     );
   }
-  if (!user) return <div className="center muted">{t(lang, "loading")}</div>;
+  if (!user) return <div className="empty big">{t(lang, "loading")}</div>;
 
-  const searching = filter.q !== "";
-  const showRecent = filter.section === "general" && !filter.categoryId && !searching && recentIds.length > 0;
+  const showing = (name: Tab) => tab === name && !opened;
 
   return (
     <ShopProvider lang={user.language}>
-      <CartMainButton lang={lang} hidden={cartOpen} onOpen={openCart} />
+      {opened && <ProductSheet product={opened} lang={lang} botUsername={botUsername} onClose={closeProduct} />}
 
-      {opened ? (
-        <ProductSheet product={opened} lang={lang} botUsername={botUsername} onClose={closeSheet} />
-      ) : (
-        cartOpen && <CartScreen lang={lang} onClose={closeCart} onOpen={openProduct} />
-      )}
-
-      {/* The list stays mounted (just hidden) so its products and scroll position survive opening a product. */}
-      <div className="app" hidden={Boolean(opened) || cartOpen}>
-        <header className="header">
-          <div className="title">Barchasi Arzon</div>
-          <div className="langs" role="group" aria-label="Language">
-            {LANGS.map((l) => (
-              <button key={l} className={l === lang ? "on" : ""} onClick={() => changeLanguage(l)}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </header>
-
-        <nav className="tabs">
-          {(["general", "special", "favorites"] as Section[]).map((s) => (
-            <button
-              key={s}
-              className={s === filter.section ? "on" : ""}
-              onClick={() => {
-                haptic();
-                update({ section: s });
-              }}
-            >
-              {t(lang, s === "general" ? "catalog" : s === "special" ? "tabSpecial" : "tabFavorites")}
-            </button>
-          ))}
-        </nav>
-
-        {favoritesTab && <FavoritesGrid lang={lang} onOpen={openProduct} />}
-
-        {!favoritesTab && (
-          <>
-            <Toolbar
-              lang={lang}
-              q={filter.q}
-              sort={filter.sort}
-              inStock={filter.inStock}
-              onSearch={(q) => update({ q })}
-              onSort={(sort) => update({ sort })}
-              onInStock={(inStock) => {
-                haptic();
-                update({ inStock });
-              }}
-            />
-
-            {filter.section === "general" && categories.length > 0 && (
-              <div className="chips">
-                <button className={filter.categoryId === null ? "on" : ""} onClick={() => update({ categoryId: null })}>
-                  {t(lang, "all")}
-                </button>
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    className={c.id === filter.categoryId ? "on" : ""}
-                    onClick={() => update({ categoryId: c.id })}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {showRecent && <RecentRow ids={recentIds} lang={lang} onOpen={openProduct} />}
-
-            <main className="grid">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} lang={lang} onOpen={openProduct} />
-              ))}
-            </main>
-
-            {!loading && !error && products.length === 0 && (
-              <div className="center muted">{searching ? t(lang, "noResults") : t(lang, "empty")}</div>
-            )}
-            {loading && <div className="center muted">{t(lang, "loading")}</div>}
-            {error && (
-              <div className="center">
-                <p>{t(lang, "error")}</p>
-                <button className="btn" onClick={retry}>
-                  {t(lang, "retry")}
-                </button>
-              </div>
-            )}
-            {hasMore && <div ref={sentinel} className="sentinel" />}
-          </>
-        )}
+      {/* Every tab stays mounted (just hidden), so its products, filters and scroll position survive switching. */}
+      <div className="tabs-root" hidden={Boolean(opened)}>
+        <div hidden={tab !== "home"}>
+          <HomeScreen
+            lang={lang}
+            active={showing("home")}
+            home={home}
+            categories={categories}
+            recentIds={recentIds}
+            onOpen={openProduct}
+            onLanguage={changeLanguage}
+            onDeals={openDeals}
+            onCatalog={openCatalog}
+          />
+        </div>
+        <div hidden={tab !== "catalog"}>
+          <CatalogScreen
+            lang={lang}
+            active={showing("catalog")}
+            categories={categories}
+            preset={catalogPreset}
+            onOpen={openProduct}
+          />
+        </div>
+        <div hidden={tab !== "deals"}>
+          <DealsScreen
+            lang={lang}
+            active={showing("deals")}
+            home={home}
+            categories={categories}
+            preset={dealsPreset}
+            onOpen={openProduct}
+          />
+        </div>
+        <div hidden={tab !== "favorites"}>
+          <FavoritesScreen lang={lang} active={showing("favorites")} onOpen={openProduct} />
+        </div>
+        <div hidden={tab !== "cart"}>
+          <CartScreen lang={lang} onOpen={openProduct} onDeals={() => openDeals()} />
+        </div>
+        <BottomNav lang={lang} active={tab} onChange={goTab} />
       </div>
     </ShopProvider>
   );

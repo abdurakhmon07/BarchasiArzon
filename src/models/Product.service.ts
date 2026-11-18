@@ -3,7 +3,7 @@ import ProductModel from "../schema/Product.model";
 import CategoryModel from "../schema/Category.model";
 import FavoriteModel from "../schema/Favorite.model";
 import CartItemModel from "../schema/CartItem.model";
-import { Product, ProductInput, ProductInquiry } from "../libs/types/product";
+import { DealsSummary, Product, ProductInput, ProductInquiry } from "../libs/types/product";
 import { ProductSort, ProductStatus } from "../libs/enums/product.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { T } from "../libs/types/common";
@@ -16,7 +16,14 @@ const SORTS: Record<ProductSort, Record<string, 1 | -1>> = {
   [ProductSort.PRICE_ASC]: { price: 1, _id: 1 },
   [ProductSort.PRICE_DESC]: { price: -1, _id: 1 },
   [ProductSort.NEWEST]: { createdAt: -1, _id: -1 },
+  [ProductSort.DISCOUNT]: { discountPercent: -1, price: 1, _id: 1 },
 };
+
+/** 40 000 → 26 000 is 35% off. No old price, or not higher than the price, means no discount. */
+export function discountOf(price: number, oldPrice?: number | null): number {
+  if (!oldPrice || oldPrice <= price) return 0;
+  return Math.round(((oldPrice - price) / oldPrice) * 100);
+}
 
 class ProductService {
   private readonly productModel;
@@ -32,10 +39,13 @@ class ProductService {
   /**
    * General catalog: visible, non-special products of one category.
    * Special section: visible products with isSpecial = true.
-   * Optional: search by name (any language), hide out-of-stock, sort.
+   * isSpecial undefined = both sections (used by the Mini App's search on the home screen).
+   * Optional: search by name (any language), hide out-of-stock, minimum discount, sort.
    */
   public async getVisibleProducts(inquiry: ProductInquiry): Promise<{ items: Product[]; total: number }> {
-    const match: T = { isVisible: true, isSpecial: Boolean(inquiry.isSpecial) };
+    const match: T = { isVisible: true };
+    if (inquiry.isSpecial !== undefined) match.isSpecial = inquiry.isSpecial;
+    if (inquiry.minDiscount) match.discountPercent = { $gte: inquiry.minDiscount };
     if (inquiry.categoryId) {
       if (!isValidObjectId(inquiry.categoryId)) return { items: [], total: 0 };
       match.categoryId = new Types.ObjectId(inquiry.categoryId);
@@ -80,6 +90,40 @@ class ProductService {
     return valid.map((id) => byId.get(id)).filter((p): p is Product => Boolean(p));
   }
 
+  /** Numbers for the Mini App home screen and the Aksiyalar header. */
+  public async getDealsSummary(topLimit: number): Promise<DealsSummary> {
+    const deals = { isVisible: true, isSpecial: true };
+    const available = { ...deals, status: { $ne: ProductStatus.OUT_OF_STOCK } };
+    const [dealCount, stats, perCategory, topDeals] = await Promise.all([
+      this.productModel.countDocuments(deals).exec(),
+      this.productModel.aggregate<{ maxDiscount: number; totalSaving: number }>([
+        { $match: { ...available, discountPercent: { $gt: 0 } } },
+        {
+          $group: {
+            _id: null,
+            maxDiscount: { $max: "$discountPercent" },
+            totalSaving: { $sum: { $subtract: ["$oldPrice", "$price"] } },
+          },
+        },
+      ]),
+      this.productModel.aggregate<{ _id: Types.ObjectId; count: number }>([
+        { $match: deals },
+        { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+      ]),
+      // limit(0) would mean "no limit" in MongoDB, so skip the query when no top deals are wanted.
+      topLimit > 0
+        ? this.productModel.find(available).sort(SORTS[ProductSort.DISCOUNT]).limit(topLimit).lean<Product[]>().exec()
+        : Promise.resolve([] as Product[]),
+    ]);
+    return {
+      dealCount,
+      maxDiscount: stats[0]?.maxDiscount ?? 0,
+      totalSaving: stats[0]?.totalSaving ?? 0,
+      topDeals,
+      dealsByCategory: Object.fromEntries(perCategory.map((c) => [String(c._id), c.count])),
+    };
+  }
+
   /** A photo may be shown publicly only if a visible product uses it (main or gallery). */
   public async isPublicPhoto(fileId: string): Promise<boolean> {
     return Boolean(
@@ -116,9 +160,10 @@ class ProductService {
   }
 
   public async create(input: ProductInput, adminId: number): Promise<Product> {
-    await this.checkInput(input);
+    await this.checkInput(input, input);
     try {
-      const result = await this.productModel.create({ ...input, updatedBy: adminId });
+      const discountPercent = discountOf(input.price, input.oldPrice);
+      const result = await this.productModel.create({ ...input, discountPercent, updatedBy: adminId });
       return result.toObject() as Product;
     } catch (err) {
       console.error("Error, model:product create", err);
@@ -127,10 +172,13 @@ class ProductService {
   }
 
   public async update(id: string, input: Partial<ProductInput>, adminId: number): Promise<Product> {
-    await this.getById(id);
-    await this.checkInput(input);
+    const current = await this.getById(id);
+    // Price rules need the final values: what's sent, or else what's already saved.
+    const final = { price: input.price ?? current.price, oldPrice: "oldPrice" in input ? input.oldPrice : current.oldPrice };
+    await this.checkInput(input, final);
+    const discountPercent = discountOf(final.price, final.oldPrice);
     const result = await this.productModel
-      .findByIdAndUpdate(id, { ...input, updatedBy: adminId }, { new: true, runValidators: true })
+      .findByIdAndUpdate(id, { ...input, discountPercent, updatedBy: adminId }, { new: true, runValidators: true })
       .lean<Product>()
       .exec();
     if (!result) throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
@@ -161,9 +209,18 @@ class ProductService {
   }
 
   /** MongoDB has no foreign keys, so check the category exists and the price is valid here. */
-  private async checkInput(input: Partial<ProductInput>): Promise<void> {
+  private async checkInput(
+    input: Partial<ProductInput>,
+    final: { price: number; oldPrice?: number | null }
+  ): Promise<void> {
     if (input.price !== undefined && (!Number.isSafeInteger(input.price) || input.price < 0)) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_PRICE);
+    }
+    if (input.oldPrice != null && (!Number.isSafeInteger(input.oldPrice) || input.oldPrice < 0)) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_PRICE);
+    }
+    if (final.oldPrice != null && final.oldPrice <= final.price) {
+      throw new Errors(HttpCode.BAD_REQUEST, Message.OLD_PRICE_TOO_LOW);
     }
     if (input.status !== undefined && !Object.values(ProductStatus).includes(input.status)) {
       throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);

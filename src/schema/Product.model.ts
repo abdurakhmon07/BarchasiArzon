@@ -24,6 +24,15 @@ const productSchema = new Schema<Product>(
       min: 0,
       validate: { validator: Number.isSafeInteger, message: "Price must be a whole number of so'm" },
     },
+    // Price before the discount; null = no old price. Must be higher than price (checked in the service).
+    oldPrice: {
+      type: Number,
+      default: null,
+      min: 0,
+      validate: { validator: (v: number | null) => v === null || Number.isSafeInteger(v), message: "Old price must be a whole number" },
+    },
+    // Kept in the database (not only calculated) so we can sort and filter by it.
+    discountPercent: { type: Number, default: 0, min: 0, max: 100 },
     status: {
       type: String,
       enum: Object.values(ProductStatus),
@@ -43,5 +52,6 @@ const productSchema = new Schema<Product>(
 // Customer queries: visible products of a category / the special section.
 productSchema.index({ isVisible: 1, categoryId: 1, isSpecial: 1, nameUz: 1 });
 productSchema.index({ isVisible: 1, isSpecial: 1, updatedAt: -1 });
+productSchema.index({ isVisible: 1, isSpecial: 1, discountPercent: -1 });
 
 export default mongoose.model<Product>("Product", productSchema);
