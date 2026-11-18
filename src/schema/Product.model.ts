@@ -32,6 +32,8 @@ const productSchema = new Schema<Product>(
     },
     isSpecial: { type: Boolean, default: false, required: true },
     photoFileId: { type: String, maxlength: 255, default: null },
+    // Extra photos shown in the Mini App gallery (not in the ER model; added as a feature).
+    galleryFileIds: { type: [String], default: [] },
     isVisible: { type: Boolean, default: true, required: true },
     updatedBy: { type: Number, ref: "User", default: null },
   },

@@ -89,6 +89,10 @@ input.short { max-width: 80px; }
 .form-actions { margin-top: 18px; }
 .photo-row { display: flex; gap: 16px; align-items: flex-start; }
 .preview { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+.gallery-admin { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.gallery-item { display: flex; flex-direction: column; gap: 4px; width: 96px; }
+.gallery-item img { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+.gallery-item .check { font-size: 13px; }
 .danger-zone { margin: 24px 0 8px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }

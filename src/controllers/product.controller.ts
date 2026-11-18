@@ -7,6 +7,7 @@ import { ProductInput } from "../libs/types/product";
 import { ProductStatus } from "../libs/enums/product.enum";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { errorText, flash } from "./admin.controller";
+import { MAX_GALLERY_PHOTOS } from "../libs/config";
 
 const productController: T = {};
 const productService = new ProductService();
@@ -25,8 +26,13 @@ function parsePrice(v: unknown): number {
   return Number(cleaned);
 }
 
-/** Reads the product form; uploads the photo to Telegram if a new one was chosen. */
-async function readInput(req: Request): Promise<ProductInput> {
+type UploadedFiles = Partial<Record<"photo" | "gallery", Express.Multer.File[]>>;
+
+/**
+ * Reads the product form. New photos are uploaded to Telegram (we keep their file_ids).
+ * `currentGallery` is the product's gallery before this save (empty for a new product).
+ */
+async function readInput(req: Request, currentGallery: string[] = []): Promise<ProductInput> {
   const b = req.body;
   const input: ProductInput = {
     categoryId: String(b.categoryId ?? ""),
@@ -42,11 +48,27 @@ async function readInput(req: Request): Promise<ProductInput> {
     isSpecial: b.isSpecial === "on",
     isVisible: b.isVisible === "on",
   };
-  if (req.file) {
-    input.photoFileId = await photoService.upload(req.file.buffer, req.file.originalname, req.session.user!._id);
+  const files = (req.files ?? {}) as UploadedFiles;
+  const adminChat = req.session.user!._id;
+
+  // Gallery: keep the photos not ticked "remove", then add the new uploads (checked before uploading).
+  const toRemove: string[] = ([] as string[]).concat(b.removeGallery ?? []);
+  const kept = currentGallery.filter((f) => !toRemove.includes(f));
+  const newGallery = files.gallery ?? [];
+  if (kept.length + newGallery.length > MAX_GALLERY_PHOTOS) {
+    throw new Errors(HttpCode.BAD_REQUEST, Message.TOO_MANY_PHOTOS);
+  }
+
+  const main = files.photo?.[0];
+  if (main) {
+    input.photoFileId = await photoService.upload(main.buffer, main.originalname, adminChat);
   } else if (b.removePhoto === "on") {
     input.photoFileId = null;
   }
+
+  const uploaded: string[] = [];
+  for (const f of newGallery) uploaded.push(await photoService.upload(f.buffer, f.originalname, adminChat));
+  input.galleryFileIds = [...kept, ...uploaded];
   return input;
 }
 
@@ -120,7 +142,8 @@ productController.getEditProduct = async (req: Request, res: Response) => {
 productController.updateProduct = async (req: Request, res: Response) => {
   try {
     console.log("updateProduct");
-    const input = await readInput(req);
+    const current = await productService.getById(req.params.id);
+    const input = await readInput(req, current.galleryFileIds ?? []);
     await productService.update(req.params.id, input, req.session.user!._id);
     flash(req, "success", `"${input.nameUz}" saved.`);
     res.redirect("/admin/products");

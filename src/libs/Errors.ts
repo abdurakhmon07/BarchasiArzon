@@ -26,6 +26,7 @@ export enum Message {
   INVALID_PRICE = "Price must be a whole number of so'm (0 or more).",
   INVALID_PHOTO = "Photo must be an image file (max 10 MB).",
   INVALID_INIT_DATA = "Open this app from the Telegram bot.",
+  TOO_MANY_PHOTOS = "A product can have at most 5 extra photos.",
 }
 
 class Errors extends Error {

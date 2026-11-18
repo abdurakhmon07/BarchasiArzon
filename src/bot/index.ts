@@ -51,6 +51,21 @@ function productCaption(p: Product, lang: Language): string {
   return caption.length > 1024 ? caption.slice(0, 1020) + "…" : caption; // Telegram caption limit
 }
 
+/** Product card (photo + caption). With `withShopButton`, adds a button that opens it in the Mini App. */
+async function sendProductCard(ctx: Context, product: Product, lang: Language, withShopButton: boolean) {
+  const caption = productCaption(product, lang);
+  const url = getMiniAppUrl();
+  const reply_markup =
+    withShopButton && url
+      ? new InlineKeyboard().webApp(t(lang, "openShop"), `${url}/?product=${product._id}`)
+      : undefined;
+  if (product.photoFileId) {
+    await ctx.replyWithPhoto(product.photoFileId, { caption, parse_mode: "HTML", reply_markup });
+  } else {
+    await ctx.reply(caption, { parse_mode: "HTML", reply_markup });
+  }
+}
+
 async function showMainMenu(ctx: Context, user: User) {
   await ctx.reply(t(user.language, "welcome"), {
     reply_markup: mainMenu(user.language, user.role === UserRole.ADMIN),
@@ -128,8 +143,17 @@ export function setupBot() {
       firstName: from.first_name,
       username: from.username,
     });
+
+    // Shared product link: t.me/<bot>?start=p_<productId>
+    const shared = /^p_([a-f0-9]{24})$/.exec(ctx.match);
+    if (shared) {
+      const product = await productService.getVisibleProduct(shared[1]);
+      if (product) await sendProductCard(ctx, product, user.language, true);
+      else await ctx.reply(t(user.language, "productGone"));
+    }
+
     if (isNew) await ctx.reply(t(Language.UZ, "chooseLanguage"), { reply_markup: languageKeyboard() });
-    else await showMainMenu(ctx, user);
+    else if (!shared) await showMainMenu(ctx, user);
   });
 
   bot.command("admin", async (ctx) => sendAdminLink(ctx, await currentUser(ctx)));
@@ -186,12 +210,7 @@ export function setupBot() {
       return;
     }
     await ctx.answerCallbackQuery();
-    const caption = productCaption(product, user.language);
-    if (product.photoFileId) {
-      await ctx.replyWithPhoto(product.photoFileId, { caption, parse_mode: "HTML" });
-    } else {
-      await ctx.reply(caption, { parse_mode: "HTML" });
-    }
+    await sendProductCard(ctx, product, user.language, false);
   });
 
   bot.callbackQuery("noop", (ctx) => ctx.answerCallbackQuery());

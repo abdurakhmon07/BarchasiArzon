@@ -22,7 +22,8 @@ export interface Product {
   price: number;
   status: ProductStatus;
   isSpecial: boolean;
-  photoUrl: string | null;
+  photoUrl: string | null; // main photo
+  photos: string[]; // main + gallery
 }
 
 export interface ProductPage {
@@ -33,3 +34,14 @@ export interface ProductPage {
 }
 
 export type Section = "general" | "special";
+
+export type Sort = "name" | "price_asc" | "price_desc" | "newest";
+
+/** Everything that decides which products the list shows. */
+export interface ProductFilter {
+  section: Section;
+  categoryId: string | null;
+  q: string;
+  sort: Sort | null; // null = the section's default order
+  inStock: boolean;
+}

@@ -3,7 +3,7 @@ import multer from "multer";
 import adminController, { flash } from "./controllers/admin.controller";
 import productController from "./controllers/product.controller";
 import categoryController from "./controllers/category.controller";
-import { MAX_PHOTO_BYTES } from "./libs/config";
+import { MAX_GALLERY_PHOTOS, MAX_PHOTO_BYTES } from "./libs/config";
 import { Message } from "./libs/Errors";
 
 const routerAdmin = express.Router();
@@ -11,7 +11,7 @@ const routerAdmin = express.Router();
 /** Product photos are kept in memory only long enough to forward them to Telegram. */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_PHOTO_BYTES, files: 1 },
+  limits: { fileSize: MAX_PHOTO_BYTES, files: 1 + MAX_GALLERY_PHOTOS },
   fileFilter: (_req, file, cb) => {
     if (/^image\/(jpeg|png|webp)$/.test(file.mimetype)) cb(null, true);
     else cb(new Error("not an image"));
@@ -19,9 +19,14 @@ const upload = multer({
 });
 
 function photoUpload(req: Request, res: Response, next: NextFunction) {
-  upload.single("photo")(req, res, (err: unknown) => {
+  const fields = upload.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "gallery", maxCount: MAX_GALLERY_PHOTOS },
+  ]);
+  fields(req, res, (err: unknown) => {
     if (!err) return next();
-    flash(req, "error", Message.INVALID_PHOTO);
+    const tooMany = err instanceof multer.MulterError && ["LIMIT_UNEXPECTED_FILE", "LIMIT_FILE_COUNT"].includes(err.code);
+    flash(req, "error", tooMany ? Message.TOO_MANY_PHOTOS : Message.INVALID_PHOTO);
     res.redirect(req.params.id ? `/admin/products/${req.params.id}/edit` : "/admin/products/new");
   });
 }

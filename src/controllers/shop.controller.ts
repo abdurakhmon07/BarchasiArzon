@@ -12,6 +12,8 @@ import { Language } from "../libs/enums/user.enum";
 import { Product } from "../libs/types/product";
 import { Category } from "../libs/types/category";
 import { User } from "../libs/types/user";
+import { ProductSort } from "../libs/enums/product.enum";
+import { getBot } from "../libs/telegram";
 
 /**
  * JSON API for the Telegram Mini App (the React app in ~/Desktop/telegram-app).
@@ -33,7 +35,10 @@ function sendError(res: Response, err: unknown) {
 }
 
 /** Shapes what the Mini App receives: text already in the user's language. */
+const photoUrl = (fileId: string) => `/api/photo/${encodeURIComponent(fileId)}`;
+
 function productDto(p: Product, lang: Language) {
+  const photos = [p.photoFileId, ...(p.galleryFileIds ?? [])].filter((f): f is string => Boolean(f));
   return {
     id: String(p._id),
     categoryId: String(p.categoryId),
@@ -42,7 +47,8 @@ function productDto(p: Product, lang: Language) {
     price: p.price,
     status: p.status,
     isSpecial: p.isSpecial,
-    photoUrl: p.photoFileId ? `/api/photo/${encodeURIComponent(p.photoFileId)}` : null,
+    photoUrl: photos.length ? photoUrl(photos[0]) : null, // main photo (cards)
+    photos: photos.map(photoUrl), // main + gallery (product page)
   };
 }
 
@@ -81,9 +87,18 @@ shopController.verifyTelegram = async (req: Request, res: Response, next: NextFu
   }
 };
 
+/** The bot's @username, used by the Mini App to build share links. Null until the bot has started. */
+function botUsername(): string | null {
+  try {
+    return getBot().botInfo.username;
+  } catch {
+    return null;
+  }
+}
+
 /** GET /api/me */
 shopController.getMe = (req: Request, res: Response) => {
-  res.json({ user: userDto((req as ShopRequest).user) });
+  res.json({ user: userDto((req as ShopRequest).user), botUsername: botUsername() });
 };
 
 /** PATCH /api/me/language  { language: "uz" | "ru" | "en" } */
@@ -112,20 +127,34 @@ shopController.getCategories = async (req: Request, res: Response) => {
 };
 
 /**
- * GET /api/products?section=general&categoryId=…&page=1
- * GET /api/products?section=special&page=1
+ * GET /api/products?section=general&categoryId=…&q=…&sort=price_asc&inStock=1&page=1
+ * GET /api/products?section=special&q=…&sort=…&inStock=1&page=1
+ * GET /api/products?ids=a,b,c      (recently viewed: those products, in that order)
  * Same rules as the bot: only visible products; special ones only in the special section.
  */
 shopController.getProducts = async (req: Request, res: Response) => {
   try {
     const lang = (req as ShopRequest).user.language;
+
+    if (req.query.ids !== undefined) {
+      const ids = String(req.query.ids).split(",").filter(Boolean).slice(0, API_PAGE_SIZE);
+      const items = await productService.getVisibleByIds(ids);
+      return res.json({ products: items.map((p) => productDto(p, lang)), page: 1, hasMore: false, total: items.length });
+    }
+
     const isSpecial = req.query.section === "special";
     const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
     const categoryId = !isSpecial && req.query.categoryId ? String(req.query.categoryId) : undefined;
+    const search = String(req.query.q ?? "").trim().slice(0, 100) || undefined;
+    const sortParam = String(req.query.sort ?? "") as ProductSort;
+    const sort = Object.values(ProductSort).includes(sortParam) ? sortParam : undefined;
 
     const { items, total } = await productService.getVisibleProducts({
       isSpecial,
       categoryId,
+      search,
+      sort,
+      inStockOnly: req.query.inStock === "1",
       page,
       limit: API_PAGE_SIZE,
     });

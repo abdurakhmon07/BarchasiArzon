@@ -15,6 +15,17 @@ const texts = {
   },
   description: { uz: "Tavsif", ru: "Описание", en: "Description" },
   close: { uz: "Yopish", ru: "Закрыть", en: "Close" },
+  search: { uz: "Qidirish…", ru: "Поиск…", en: "Search…" },
+  noResults: { uz: "Hech narsa topilmadi.", ru: "Ничего не найдено.", en: "Nothing found." },
+  sortDefault: { uz: "Tartib: odatiy", ru: "Порядок: обычный", en: "Sort: default" },
+  sortName: { uz: "Nomi bo'yicha", ru: "По названию", en: "By name" },
+  sortPriceAsc: { uz: "Arzonroq avval", ru: "Сначала дешевле", en: "Price: low to high" },
+  sortPriceDesc: { uz: "Qimmatroq avval", ru: "Сначала дороже", en: "Price: high to low" },
+  sortNewest: { uz: "Yangilari avval", ru: "Сначала новые", en: "Newest first" },
+  inStockOnly: { uz: "Faqat mavjud", ru: "Только в наличии", en: "In stock only" },
+  recent: { uz: "Yaqinda ko'rilgan", ru: "Вы смотрели", en: "Recently viewed" },
+  share: { uz: "Ulashish", ru: "Поделиться", en: "Share" },
+  linkCopied: { uz: "Havola nusxalandi", ru: "Ссылка скопирована", en: "Link copied" },
 } as const;
 
 export type TextKey = keyof typeof texts;

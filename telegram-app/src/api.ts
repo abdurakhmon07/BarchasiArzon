@@ -1,5 +1,5 @@
 import { initData } from "./telegram";
-import type { Category, Language, Product, ProductPage, Section, User } from "./types";
+import type { Category, Language, Product, ProductFilter, ProductPage, User } from "./types";
 
 /** Empty in development: Vite forwards /api to the backend. */
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
@@ -31,7 +31,7 @@ export function photoSrc(photoUrl: string | null): string | null {
 }
 
 export const api = {
-  me: () => request<{ user: User }>("/api/me").then((r) => r.user),
+  me: () => request<{ user: User; botUsername: string | null }>("/api/me"),
 
   setLanguage: (language: Language) =>
     request<{ user: User }>("/api/me/language", { method: "PATCH", body: JSON.stringify({ language }) }).then(
@@ -40,11 +40,20 @@ export const api = {
 
   categories: () => request<{ categories: Category[] }>("/api/categories").then((r) => r.categories),
 
-  products: (section: Section, categoryId: string | null, page: number) => {
-    const q = new URLSearchParams({ section, page: String(page) });
-    if (categoryId) q.set("categoryId", categoryId);
+  products: (filter: ProductFilter, page: number) => {
+    const q = new URLSearchParams({ section: filter.section, page: String(page) });
+    if (filter.categoryId) q.set("categoryId", filter.categoryId);
+    if (filter.q) q.set("q", filter.q);
+    if (filter.sort) q.set("sort", filter.sort);
+    if (filter.inStock) q.set("inStock", "1");
     return request<ProductPage>(`/api/products?${q}`);
   },
+
+  /** Products by id, in the same order (hidden or deleted ones are skipped). */
+  productsByIds: (ids: string[]) =>
+    ids.length
+      ? request<ProductPage>(`/api/products?ids=${ids.join(",")}`).then((r) => r.products)
+      : Promise.resolve([] as Product[]),
 
   product: (id: string) => request<{ product: Product }>(`/api/products/${id}`).then((r) => r.product),
 };

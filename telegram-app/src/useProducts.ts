@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
-import type { Language, Product, Section } from "./types";
+import type { Language, Product, ProductFilter } from "./types";
 
-/** Loads products page by page; starts over when the section, category or language changes. */
-export function useProducts(section: Section, categoryId: string | null, lang: Language | null) {
+/** Loads products page by page; starts over when the filter or language changes. */
+export function useProducts(filter: ProductFilter, lang: Language | null) {
   const [products, setProducts] = useState<Product[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -12,6 +12,9 @@ export function useProducts(section: Section, categoryId: string | null, lang: L
   // Refs, so the scroll observer always sees the latest values (no stale closures).
   const state = useRef({ page: 0, busy: false, hasMore: true, failed: false });
   const requestId = useRef(0); // ignores answers to requests made for an older filter
+
+  // A string key, so a new filter object with the same values doesn't reload.
+  const key = JSON.stringify(filter);
 
   const load = useCallback(
     async (page: number) => {
@@ -22,7 +25,7 @@ export function useProducts(section: Section, categoryId: string | null, lang: L
       setLoading(true);
       setError(null);
       try {
-        const res = await api.products(section, categoryId, page);
+        const res = await api.products(JSON.parse(key) as ProductFilter, page);
         if (id !== requestId.current) return;
         setProducts((prev) => (page === 1 ? res.products : [...prev, ...res.products]));
         state.current.page = res.page;
@@ -39,7 +42,7 @@ export function useProducts(section: Section, categoryId: string | null, lang: L
         }
       }
     },
-    [section, categoryId, lang]
+    [key, lang]
   );
 
   // New filter: forget everything and load page 1.

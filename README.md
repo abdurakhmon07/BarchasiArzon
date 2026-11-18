@@ -53,11 +53,13 @@ Every request except photos must send `Authorization: tma <initData>` (Telegram'
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/me` | the user (creates them if new) |
+| GET | `/api/me` | the user (creates them if new) and the bot's username (for share links) |
 | PATCH | `/api/me/language` | body `{ "language": "uz" \| "ru" \| "en" }` |
 | GET | `/api/categories` | categories, names in the user's language |
 | GET | `/api/products?section=general&categoryId=…&page=1` | visible, non-special products (20 per page) |
 | GET | `/api/products?section=special&page=1` | visible special-price products |
+| | …plus optional `&q=text` (search by name), `&sort=name\|price_asc\|price_desc\|newest`, `&inStock=1` | |
+| GET | `/api/products?ids=a,b,c` | those products in that order (recently viewed) |
 | GET | `/api/products/:id` | one visible product |
 | GET | `/api/photo/:fileId` | photo, public, but only for visible products |
 

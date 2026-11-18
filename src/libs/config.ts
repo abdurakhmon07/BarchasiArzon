@@ -8,6 +8,9 @@ export const BOT_PAGE_SIZE = 8;
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
+/** Extra photos per product, besides the main one. */
+export const MAX_GALLERY_PHOTOS = 5;
+
 /** Mini App initData older than this is rejected (Telegram re-signs it each time the app opens). */
 export const INIT_DATA_MAX_AGE_SECONDS = 24 * 3600;
 

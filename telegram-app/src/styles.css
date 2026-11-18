@@ -87,3 +87,48 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .center { text-align: center; padding: 40px 24px; }
 .btn { border: 0; background: var(--accent); color: var(--accent-text); padding: 10px 18px; border-radius: 12px; font-weight: 600; }
 .sentinel { height: 1px; }
+
+/* ---------- Search, sort, filter ---------- */
+.toolbar { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 4px; background: var(--bg); }
+.search { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 12px; font-size: 14px; opacity: .55; pointer-events: none; }
+.search input {
+  width: 100%; font: inherit; color: var(--text); background: var(--bg2); border: 0; border-radius: 12px;
+  padding: 10px 36px 10px 36px; outline: none; -webkit-appearance: none; appearance: none;
+}
+.search input::placeholder { color: var(--hint); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-clear { position: absolute; right: 6px; border: 0; background: none; color: var(--hint); padding: 6px 8px; }
+.filters { display: flex; gap: 8px; }
+.filters select, .toggle {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--bg2);
+  border: 1px solid transparent; border-radius: 999px; padding: 6px 12px; min-width: 0;
+}
+.filters select { flex: 1; -webkit-appearance: none; appearance: none; padding-right: 26px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--hint) 50%), linear-gradient(135deg, var(--hint) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.filters select.on, .toggle.on { border-color: var(--accent); color: var(--accent); }
+.toggle { flex: none; white-space: nowrap; }
+
+/* ---------- Recently viewed ---------- */
+.recent { background: var(--bg); padding: 4px 0 12px; }
+.recent-title { font-size: 14px; color: var(--hint); font-weight: 600; margin: 4px 16px 8px; }
+.recent-row { display: flex; gap: 10px; overflow-x: auto; padding: 0 16px; scrollbar-width: none; }
+.recent-row::-webkit-scrollbar { display: none; }
+.recent-item { flex: none; width: 96px; border: 0; background: none; padding: 0; text-align: left; }
+.recent-photo { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; background: color-mix(in srgb, var(--hint) 14%, var(--card)); }
+.recent-name { font-size: 12px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-price { font-size: 12px; font-weight: 700; }
+
+/* ---------- Gallery + share ---------- */
+.gallery { position: relative; width: 100%; height: 100%; }
+.gallery-track { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.gallery-track::-webkit-scrollbar { display: none; }
+.gallery-slide { flex: 0 0 100%; height: 100%; scroll-snap-align: center; }
+.gallery-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+.gallery-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .55); box-shadow: 0 0 2px rgba(0, 0, 0, .4); }
+.gallery-dots button.on { background: #fff; width: 18px; border-radius: 4px; }
+.sheet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.share { border: 0; background: var(--bg2); color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px 14px; border-radius: 999px; }
+[hidden] { display: none !important; }
+.sheet-row .badge { align-self: center; }

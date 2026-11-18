@@ -49,7 +49,7 @@
   </div>
 
   <fieldset>
-    <legend>Photo</legend>
+    <legend>Main photo</legend>
     <div class="photo-row">
       <% if (p.photoFileId) { %>
         <img class="preview" src="/admin/photo/<%= encodeURIComponent(p.photoFileId) %>" alt="" />
@@ -62,6 +62,27 @@
         <% } %>
       </div>
     </div>
+  </fieldset>
+
+  <% const gallery = p.galleryFileIds || []; %>
+  <fieldset>
+    <legend>More photos <span class="muted small">(up to 5, shown as a gallery in the shop)</span></legend>
+    <% if (gallery.length) { %>
+      <div class="gallery-admin">
+        <% gallery.forEach(f => { %>
+          <label class="gallery-item">
+            <img src="/admin/photo/<%= encodeURIComponent(f) %>" alt="" loading="lazy" />
+            <span class="check"><input type="checkbox" name="removeGallery" value="<%= f %>" /> Remove</span>
+          </label>
+        <% }) %>
+      </div>
+    <% } %>
+    <% if (gallery.length < 5) { %>
+      <input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp" />
+      <p class="muted small">You can add <%= 5 - gallery.length %> more. Select several files at once.</p>
+    <% } else { %>
+      <p class="muted small">The gallery is full. Remove a photo to add another.</p>
+    <% } %>
   </fieldset>
 
   <div class="form-actions">
