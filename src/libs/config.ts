@@ -1,7 +1,10 @@
-export const MORGAN_FORMAT = `:method :url :response-time [:status] \n`;
+import type { Env } from "../env";
 
 /** How long a one-time admin login link from the bot stays valid. */
 export const LOGIN_TOKEN_TTL_MINUTES = 10;
+
+/** How long an admin stays logged in. */
+export const ADMIN_SESSION_HOURS = 6;
 
 /** How many products the bot lists per page. */
 export const BOT_PAGE_SIZE = 8;
@@ -20,22 +23,21 @@ export const INIT_DATA_MAX_AGE_SECONDS = 24 * 3600;
 /** How many products the Mini App loads per request. */
 export const API_PAGE_SIZE = 20;
 
-/** https URL of the Mini App, or null if not configured (Telegram only accepts https). */
-export function getMiniAppUrl(): string | null {
-  const url = String(process.env.MINI_APP_URL ?? "").trim();
-  return url.startsWith("https://") ? url.replace(/\/$/, "") : null;
+/** The Worker's public address without a trailing slash, e.g. https://barchasiarzon.<you>.workers.dev */
+export function publicUrl(env: Env): string {
+  return String(env.PUBLIC_URL ?? "").trim().replace(/\/$/, "");
+}
+
+/** Mini App address for Telegram buttons, or null when not https (Telegram only accepts https). */
+export function miniAppUrl(env: Env): string | null {
+  const url = publicUrl(env);
+  return url.startsWith("https://") ? url : null;
 }
 
 /** Telegram IDs listed in ADMIN_IDS become admins when they press /start. */
-export function getAdminIds(): number[] {
-  return String(process.env.ADMIN_IDS ?? "")
+export function adminIds(env: Env): number[] {
+  return String(env.ADMIN_IDS ?? "")
     .split(",")
     .map((s) => Number(s.trim()))
     .filter((n) => Number.isSafeInteger(n) && n > 0);
-}
-
-export function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing environment variable ${name} (see .env.example)`);
-  return value;
 }

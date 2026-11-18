@@ -2,59 +2,30 @@
 
 The customer catalog that opens inside Telegram: categories, product photos, prices, stock status, a special-price section, and Uzbek / Russian / English.
 
-React + TypeScript + Vite. Talks to the backend in `~/Desktop/barchasi-arzon` (`/api/...`).
+React + TypeScript + Vite. Served by the Worker in the project root, which also provides the API (`/api/...`).
 
 ## How it fits together
 
 ```
-Telegram ──opens──▶ Mini App (this project, https URL)
-                        │  every request sends:  Authorization: tma <initData>
-                        ▼
-                  barchasi-arzon  /api/*   ── checks Telegram's signature, reads MongoDB
+Telegram ──opens──▶ https://barchasiarzon.<you>.workers.dev   (the Worker in the project root)
+                        ├─ /        this app (built into telegram-app/dist)
+                        └─ /api/*   the API — every request sends  Authorization: tma <initData>
 ```
 
-`initData` is signed by Telegram with your bot token, so the backend knows exactly which Telegram user is calling. No passwords.
+`initData` is signed by Telegram with the bot token, so the Worker knows exactly which Telegram user is calling. No passwords.
+
+The app is **not deployed on its own**: `npm run deploy` in the project root builds it and uploads it together with the Worker.
 
 ## Run it in development
 
-Telegram only opens Mini Apps over **https**, so your laptop needs a temporary public https address (a "tunnel").
+From the project root:
 
-1. Start the backend (in `~/Desktop/barchasi-arzon`): `npm run start:dev`
-2. Start this app: `npm install` (first time only), then `npm run dev`. It runs on http://localhost:5173 and forwards `/api` to the backend on port 3005.
-3. Open a tunnel to port 5173 in a third terminal:
-   ```
-   npx cloudflared tunnel --url http://localhost:5173
-   ```
-   It prints an address like `https://something-random.trycloudflare.com`.
-4. Put that address in the backend's `.env`:
-   ```
-   MINI_APP_URL=https://something-random.trycloudflare.com
-   ```
-   Then restart the backend (Ctrl+C, then `npm run start:dev`).
-5. In Telegram, send `/start` to the bot. You'll see a **🛒 Open the shop** button and a **Do'kon** menu button next to the message box.
-
-The free tunnel address changes every time you restart cloudflared, so repeat steps 4–5 when it does.
-
-Opening http://localhost:5173 in a normal browser only shows "Open this app from the bot": without Telegram there is no signed `initData`.
-
-## Deploy on Cloudflare Workers
-
-`wrangler.jsonc` + `worker/index.ts` make Cloudflare serve the built app and forward `/api/*` to the backend:
-
-```
-Telegram → https://barchasiarzon.<you>.workers.dev
-             ├─ /api/*  → BACKEND_URL (your backend, e.g. a cloudflared tunnel to localhost:3005)
-             └─ else    → dist/ (the React app)
+```bash
+npm run dev       # Worker + local database on http://localhost:8787
+npm run dev:app   # this app with live reload on http://localhost:5173 (forwards /api to :8787)
 ```
 
-Cloudflare dashboard → your Worker → **Settings**:
-
-- **Build**: Root directory `telegram-app`, Build command `npm run build`, Deploy command `npx wrangler deploy`
-- **Variables and Secrets**: `BACKEND_URL` = the backend's https address (no `/` at the end)
-
-In the backend's `.env`, `MINI_APP_URL` = the workers.dev address. Leave `VITE_API_URL` empty: the app and `/api` share one address.
-
-Check: opening `https://…workers.dev/api/me` in a browser should show `{"code":401,"message":"Open this app from the Telegram bot."}`. That means Cloudflare reached your backend.
+In a normal browser the app only shows "Open this app from the bot" (there is no signed `initData` outside Telegram). To try it inside Telegram, use the dev deployment (`npm run deploy:dev` in the root, see the root README).
 
 ## Files
 

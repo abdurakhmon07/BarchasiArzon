@@ -2,8 +2,8 @@ import { InlineKeyboard, Keyboard } from "grammy";
 import { Language } from "../libs/enums/user.enum";
 import { ProductStatus } from "../libs/enums/product.enum";
 import { formatPrice, localized, t } from "../libs/i18n";
-import { Category } from "../libs/types/category";
-import { Product } from "../libs/types/product";
+import type { CategoryRow } from "../db/schema";
+import type { Product } from "../libs/types/product";
 import { BOT_PAGE_SIZE } from "../libs/config";
 
 export function languageKeyboard(): InlineKeyboard {
@@ -23,10 +23,10 @@ export function mainMenu(lang: Language, isAdmin: boolean): Keyboard {
   return kb.resized().persistent();
 }
 
-export function categoriesKeyboard(categories: Category[], lang: Language): InlineKeyboard {
+export function categoriesKeyboard(categories: CategoryRow[], lang: Language): InlineKeyboard {
   const kb = new InlineKeyboard();
   categories.forEach((c, i) => {
-    kb.text(`${c.icon ? c.icon + " " : ""}${localized(c, "name", lang)}`, `cat:${c._id}:1`);
+    kb.text(`${c.icon ? c.icon + " " : ""}${localized(c, "name", lang)}`, `cat:${c.id}:1`);
     if (i % 2 === 1) kb.row();
   });
   return kb;
@@ -47,7 +47,7 @@ export function productListKeyboard(
   const kb = new InlineKeyboard();
   for (const p of products) {
     const mark = p.status === ProductStatus.OUT_OF_STOCK ? "🔴 " : "";
-    kb.text(`${mark}${localized(p, "name", lang)} — ${formatPrice(p.price, lang)}`, `prod:${p._id}`).row();
+    kb.text(`${mark}${localized(p, "name", lang)} — ${formatPrice(p.price, lang)}`, `prod:${p.id}`).row();
   }
 
   const pages = Math.max(1, Math.ceil(total / BOT_PAGE_SIZE));

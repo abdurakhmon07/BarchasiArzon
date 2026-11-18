@@ -1,0 +1,91 @@
+// Barchasi Arzon on Cloudflare Workers: one Worker serves the Mini App, the API,
+// the admin panel and the Telegram bot webhook, with a D1 (SQLite) database.
+//
+//   npm run dev       local Worker + local D1 (http://localhost:8787)
+//   npm run deploy    production (main bot)
+//   npm run deploy:dev  test copy (test bot), see "env.dev" below
+//
+// Secrets are NOT stored here. Set them once per environment:
+//   npx wrangler secret put BOT_TOKEN          (and SESSION_SECRET, WEBHOOK_SECRET)
+//   npx wrangler secret put BOT_TOKEN --env dev
+// For local development put them in .dev.vars (see .dev.vars.example).
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "barchasiarzon",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-10-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// The built React Mini App. Requests for these paths go to our code first; everything else is a static file.
+	"assets": {
+		"directory": "./telegram-app/dist",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		// "/__scheduled" lets `wrangler dev --test-scheduled` trigger the nightly cron locally.
+		"run_worker_first": [
+			"/api/*",
+			"/admin",
+			"/admin/*",
+			"/bot",
+			"/bot/*",
+			"/__scheduled"
+		]
+	},
+	// Admin panel stylesheet is imported as a string (src/views/admin.css).
+	"rules": [
+		{
+			"type": "Text",
+			"globs": [
+				"**/*.css"
+			],
+			"fallthrough": true
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "barchasi-arzon",
+			"database_id": "095b30c3-286f-49c5-bde6-471886c42fbb",
+			"migrations_dir": "migrations"
+		}
+	],
+	// Every night: delete expired admin login links.
+	"triggers": {
+		"crons": [
+			"0 3 * * *"
+		]
+	},
+	"vars": {
+		// Public https address of this Worker: used for Mini App buttons and admin login links.
+		"PUBLIC_URL": "https://barchasiarzon.gofurovuz08.workers.dev",
+		// Comma-separated numeric Telegram IDs that become admins on /start.
+		"ADMIN_IDS": "1308594876"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"env": {
+		// Test copy: its own Worker, its own database, its own (test) bot.
+		"dev": {
+			"name": "barchasiarzon-dev",
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "barchasi-arzon-dev",
+					"database_id": "abc4d794-c82e-439c-9149-f07264d26b80",
+					"migrations_dir": "migrations"
+				}
+			],
+			"triggers": {
+				"crons": [
+					"0 3 * * *"
+				]
+			},
+			"vars": {
+				"PUBLIC_URL": "https://barchasiarzon-dev.gofurovuz08.workers.dev",
+				"ADMIN_IDS": "1308594876"
+			}
+		}
+	}
+}

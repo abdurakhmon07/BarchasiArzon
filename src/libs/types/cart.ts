@@ -1,4 +1,4 @@
-import { Product } from "./product";
+import type { Product } from "./product";
 
 /** One cart line, with the product's current data. */
 export interface CartLine {

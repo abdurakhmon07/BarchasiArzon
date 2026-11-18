@@ -1,0 +1,6 @@
+# Copy to .dev.vars for `npm run dev` (local only, never committed).
+BOT_TOKEN=123456:your-TEST-bot-token
+SESSION_SECRET=any-long-random-string
+WEBHOOK_SECRET=another-random-string-letters-digits-only
+PUBLIC_URL=http://localhost:8787
+ADMIN_IDS=111111111

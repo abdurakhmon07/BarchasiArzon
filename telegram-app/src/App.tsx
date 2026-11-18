@@ -16,9 +16,9 @@ import type { Category, Home, Language, Product, Tab, User } from "./types";
 /** Product id from a shared link: ?product=<id> (bot button) or start_param p_<id> (t.me/...?startapp=). */
 function sharedProductId(): string | null {
   const fromUrl = new URLSearchParams(location.search).get("product");
-  const fromStart = /^p_([a-f0-9]{24})$/.exec(tg?.initDataUnsafe?.start_param ?? "")?.[1];
+  const fromStart = /^p_(\d+)$/.exec(tg?.initDataUnsafe?.start_param ?? "")?.[1];
   const id = fromUrl ?? fromStart ?? null;
-  return id && /^[a-f0-9]{24}$/.test(id) ? id : null;
+  return id && /^\d+$/.test(id) ? id : null;
 }
 
 type Preset = { categoryId: string | null; n: number };

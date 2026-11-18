@@ -1,40 +1,35 @@
 {
   "name": "barchasi-arzon",
   "version": "1.0.0",
-  "description": "Barchasi Arzon - Telegram household products catalog (bot + admin panel)",
+  "description": "Barchasi Arzon - Telegram shop on Cloudflare Workers (Hono + D1 + grammY) with a React Mini App",
   "license": "ISC",
   "author": "abdurakhmon07",
-  "type": "commonjs",
-  "main": "src/server.ts",
+  "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/server.ts",
-    "start:dev": "nodemon --watch src -e ts,ejs,css --exec ts-node src/server.ts",
-    "build": "tsc && cp -r src/views src/public dist/",
-    "start:prod": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "dev": "wrangler dev",
+    "dev:app": "npm --prefix telegram-app run dev",
+    "build": "npm --prefix telegram-app install && npm --prefix telegram-app run build",
+    "deploy": "npm run build && wrangler deploy --env=\"\"",
+    "deploy:dev": "npm run build && wrangler deploy --env dev",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:dev": "wrangler d1 migrations apply DB --remote --env dev",
+    "db:migrate:prod": "wrangler d1 migrations apply DB --remote --env=\"\"",
+    "import:mongo": "node scripts/import-from-mongo.ts",
+    "typecheck": "tsc --noEmit && npm --prefix telegram-app run typecheck"
   },
   "dependencies": {
-    "connect-mongodb-session": "^5.0.0",
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.10",
-    "ejs": "^3.1.10",
-    "express": "^4.22.3",
-    "express-session": "^1.19.0",
+    "drizzle-orm": "^0.45.4",
     "grammy": "^1.46.0",
-    "mongoose": "^8.24.9",
-    "morgan": "^1.12.1",
-    "multer": "^2.5.0"
+    "hono": "^4.13.19"
   },
   "devDependencies": {
-    "@types/connect-mongodb-session": "^2.4.8",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.25",
-    "@types/express-session": "^1.19.0",
-    "@types/morgan": "^1.9.10",
-    "@types/multer": "^2.3.0",
+    "@cloudflare/workers-types": "^5.20261118.1",
     "@types/node": "^26.6.6",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "drizzle-kit": "^0.31.11",
+    "mongodb": "^6.22.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.164.0"
   }
 }
