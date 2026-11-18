@@ -3,8 +3,8 @@ import type { Env } from "../env";
 /** How long a one-time admin login link from the bot stays valid. */
 export const LOGIN_TOKEN_TTL_MINUTES = 10;
 
-/** How long an admin stays logged in. */
-export const ADMIN_SESSION_HOURS = 6;
+/** How long an admin stays logged in (30 days). The admin role is still re-checked on every page. */
+export const ADMIN_SESSION_HOURS = 24 * 30;
 
 /** How many products the bot lists per page. */
 export const BOT_PAGE_SIZE = 8;
